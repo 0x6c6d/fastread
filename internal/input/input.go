@@ -60,7 +60,13 @@ func Select(arg string, hasArg, stdinIsTTY bool) (Source, error) {
 // Load returns the document for src. KindRaw: ParseText of the text. KindStdin: reads all of
 // stdin, then ParseText. KindFile: not implemented in the walking skeleton, returns an error
 // wrapping ErrUnsupported ("file input not implemented yet"). Read errors are wrapped with %w.
+// Stdin is capped at MaxInputBytes (ErrTooLarge).
 func Load(src Source, stdin io.Reader) (Document, error) {
+	return load(src, stdin, DefaultLimits())
+}
+
+// load is Load with explicit limits (tests pass small values).
+func load(src Source, stdin io.Reader, lim Limits) (Document, error) {
 	switch src.Kind {
 	case KindRaw:
 		return Document{Paragraphs: ParseText([]byte(src.Text))}, nil
@@ -68,7 +74,7 @@ func Load(src Source, stdin io.Reader) (Document, error) {
 		if stdin == nil {
 			return Document{}, fmt.Errorf("read stdin: no reader: %w", ErrNoInput)
 		}
-		b, err := io.ReadAll(stdin)
+		b, err := readCapped(stdin, lim.MaxBytes)
 		if err != nil {
 			return Document{}, fmt.Errorf("read stdin: %w", err)
 		}

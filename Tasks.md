@@ -62,7 +62,7 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-
 | T010 | 1 | CLI wiring (input to TUI/GUI) | T002, T005, T007, T008, T009 | opus | done | cmd/fastread/run.go wiring + run_test.go (seams, signals, exit codes) |
 | T011 | 1 | E2E harness and TestE2EBasic (tmux) | T010 | sonnet | done | e2e/helpers_test.go, basic_test.go; Phase 1 exit criterion passes |
 | T012 | 1 | MIT LICENSE file | T000 | opus | done | LICENSE (MIT, last line rewrapped to satisfy line-based check) |
-| T013 | 2 | Hardened input helpers (size caps, zip, XML, recover) | T005 | opus | todo | |
+| T013 | 2 | Hardened input helpers (size caps, zip, XML, recover) | T005 | opus | done | internal/input/safe.go + safe_test.go; Load delegates to load(lim) |
 | T014 | 2 | Source selection with the path-like rule (A3) | T005, T010 | opus | todo | |
 | T015 | 2 | File type detection, file loading and loader stubs | T010, T013 | opus | todo | |
 | T016 | 2 | Markdown stripper | T015 | sonnet | todo | |
