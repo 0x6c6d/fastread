@@ -108,7 +108,7 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-
 | T056 | 5 | Phase 5 gate (live keys e2e, exit criterion) | T050, T051, T052, T053, T054, T055 | sonnet | done | e2e/keys_test.go (TestE2EKeys); Phase 5 exit criterion passes |
 | T057 | 6 | GUI pure layout: focus x, baseline, ticks | T008, T028 | sonnet | done | gui/layout.go (pure Layout, PxOf, Measurer), measure_test.go, layout_test.go |
 | T058 | 6 | GUI shrink and split (R23), all-sizes focus invariant | T057 | sonnet | done | layout.go shrinkSplit (R23), shrink_test.go (31 words, 1395 cases), race const files |
-| T059 | 6 | GUI help and progress geometry (pure) | T057, T042 | sonnet | todo | |
+| T059 | 6 | GUI help and progress geometry (pure) | T057, T042 | sonnet | done | gui/chrome.go (LayoutChrome, ProgressText, HelpText), chrome_test.go |
 | T060 | 6 | Gio key map (TestGUIKeyMap) | T008, T030 | sonnet | todo | |
 | T061 | 6 | Gio window: layout drawing, Player deadlines, keys, resize | T035, T046, T058, T059, T060 | opus | todo | verify uses scripts/verify/_gui.sh (xwd pixel checks) |
 | T062 | 6 | GUI exit path and display errors (finish once, R24) | T061 | opus | todo | |
