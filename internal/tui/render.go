@@ -43,6 +43,9 @@ type Model struct {
 	EffectiveWPM int // 0 = unknown
 }
 
+// TooSmallText is shown when the terminal is too small to draw a word.
+const TooSmallText = "terminal too small"
+
 // FocusColumn returns the fixed focus column for width w: w/2.
 func FocusColumn(w int) int { return w / 2 }
 
@@ -64,7 +67,26 @@ func Render(m Model, w, h int) Frame {
 	s := EffectiveSize(m.Word, m.Size, w, h)
 	f.Size = s
 	if s == 0 {
+		x0 := w - len(TooSmallText)
+		if x0 < 0 {
+			x0 = 0
+		} else {
+			x0 /= 2
+		}
+		for i, r := range []rune(TooSmallText) {
+			if x0+i >= w {
+				break
+			}
+			f.Cells[h/2][x0+i] = Cell{Text: string(r)}
+		}
 		return f
+	}
+	R := glyph.Rows(s)
+	y0 := h/2 - (R-1)/2
+	for _, ty := range []int{y0 - 1, y0 + R} {
+		if ty >= 0 && ty < h {
+			f.Cells[ty][w/2] = Cell{Text: "│", Style: StyleTick}
+		}
 	}
 	if s >= 2 {
 		renderBlocks(&f, m.Word, s)

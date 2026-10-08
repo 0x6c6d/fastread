@@ -88,7 +88,7 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-
 | T036 | 3 | Phase 3 gate (core pipeline integration tests) | T026, T027, T028, T029, T031, T035 | sonnet | done | core_test.go (TestPrepareSanitized, TestCorePipeline); Phase 3 exit criterion passes |
 | T037 | 4 | Block-glyph font tables from X11 misc-fixed (internal/tui/glyph) | T001 | sonnet | done | internal/tui/glyph: gen.go, data.go (byte-identical regen), glyph.go, glyph_test.go; Plan v1.1 row 26: misc-fixed replaces font8x8 (not available offline) |
 | T038 | 4 | Block-glyph sizes 2-5 with size and rune fallback | T006, T037 | sonnet | done | layout.go EffectiveSize, render.go blocks, glyph_render_test.go; fix-ups: TestEncodeColors h 3-5, cmd TestRunSignalSaves --size 1 |
-| T039 | 4 | Guide ticks and the too-small screen | T038 | sonnet | todo | |
+| T039 | 4 | Guide ticks and the too-small screen | T038 | sonnet | done | render.go ticks + TooSmallText; ticks_test.go (TestTicks, TestTooSmall, TestTicksSpot) |
 | T040 | 4 | Display widths (wide, combining, zero-width clusters) | T038 | sonnet | todo | |
 | T041 | 4 | Long-word splitting and the focus-column invariant | T039, T040 | sonnet | todo | |
 | T042 | 4 | Progress and help rows | T039 | sonnet | todo | |
