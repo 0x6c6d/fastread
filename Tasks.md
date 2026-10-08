@@ -55,7 +55,7 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-
 | T003 | 1 | ORP focus index skeleton (uniseg pin) | T001 | opus | done | internal/orp (Clusters, Position, Index via uniseg v0.4.7), go.mod/go.sum |
 | T004 | 1 | Playback model skeleton (state.Player) | T001, T002 | sonnet | done | internal/state: Clock, Player skeleton + test |
 | T005 | 1 | Input skeleton (selection, raw, stdin) | T001 | opus | done | internal/input: Source, Select, Load raw/stdin, typed errors + tests; orphan from interrupted run verified |
-| T006 | 1 | TUI frame renderer and ANSI encoder skeleton | T003 | sonnet | todo | |
+| T006 | 1 | TUI frame renderer and ANSI encoder skeleton | T003 | sonnet | done | internal/tui: color.go, render.go, encode.go + tests |
 | T007 | 1 | TUI runtime skeleton (terminal, alt screen, loop) | T004, T006 | opus | todo | |
 | T008 | 1 | GUI skeleton (Gio window, nogui stub) | T004 | opus | todo | |
 | T009 | 1 | CLI flags, usage, help and version | T001 | opus | todo | |
