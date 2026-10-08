@@ -73,7 +73,7 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-
 | T021 | 2 | PDF text-layer loader (ledongthuc/pdf pin) | T015 | opus | done | pdf.go loader, pdf_fixture_test.go, pdf_test.go, sample.pdf + notext.pdf; ledongthuc/pdf pinned |
 | T022 | 2 | PDF hostile-input suite | T021 | opus | done | pdf_corrupt_test.go (20 rows); pdf.go root-Pages validation + one-line errors |
 | T023 | 2 | Flag validation table and help/version tests | T010 | opus | done | cmd/fastread/cli_test.go (TestFlags, TestHelpVersion); no production change |
-| T024 | 2 | Typed-error chain and exit-code mapping | T014, T015, T018, T021 | opus | todo | |
+| T024 | 2 | Typed-error chain and exit-code mapping | T014, T015, T018, T021 | opus | done | run.go: usageError, prepare, exitCode, runErr; errors_test.go; empty-text error now carries file path |
 | T025 | 2 | Performance test 5 MB load and tokenize | T015 | sonnet | todo | |
 | T026 | 2 | Phase 2 gate (fixtures through the CLI flow) | T016, T019, T020, T022, T023, T024, T025 | sonnet | todo | also Phase 2 exit criterion |
 | T027 | 3 | Full tokenizer (paragraph breaks, Sanitize) | T002 | opus | todo | |
