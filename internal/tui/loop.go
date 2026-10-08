@@ -39,38 +39,65 @@ func modelOf(p *state.Player) Model {
 // Run plays p on t until a quit key, the end of the text or ctx is done, and returns the
 // index of the word on screen. The caller checks p.Finished() to tell end-of-text from quit.
 // All timing comes from p.Deadline(); the loop never schedules "now + delay" itself.
+//
+// Exit paths: a quit key, ctx done and the end of the text return (p.Index(), nil); a key
+// read error, a frame write error, a size error or a panic anywhere in the loop return
+// p.Index() and a "tui: ..." error. After a successful MakeRaw, cleanup runs exactly once
+// on every path: RestoreSeq (always the last write), Restore, Close, each guarded so a
+// failure or panic in one does not skip the rest; Run returns only after the reader
+// goroutine (the only goroutine it starts) has exited and both timers are stopped.
 func Run(ctx context.Context, t Terminal, p *state.Player, opts Options) (last int, err error) {
 	if err := t.MakeRaw(); err != nil {
-		t.Close()
-		return p.Index(), fmt.Errorf("tui: raw mode: %w", err)
+		guard(t.Close)
+		return safeIndex(p), fmt.Errorf("tui: raw mode: %w", err)
 	}
 
-	done := make(chan struct{})
-	readerDone := make(chan struct{})
+	done := make(chan struct{})       // closed by cleanup before Close
+	readerDone := make(chan struct{}) // closed when the reader goroutine exits
 	readerStarted := false
+	// Both timers start stopped; a nil channel means "not armed".
+	deadline := time.NewTimer(time.Hour)
+	deadline.Stop()
+	escTimer := time.NewTimer(time.Hour)
+	escTimer.Stop()
+
 	defer func() {
-		r := recover()
-		t.Write([]byte(RestoreSeq))
-		t.Restore()
+		if r := recover(); r != nil {
+			last = safeIndex(p)
+			err = fmt.Errorf("tui: internal error: %v", r)
+		}
+		deadline.Stop()
+		escTimer.Stop()
+		guard(func() error { _, e := t.Write([]byte(RestoreSeq)); return e })
+		guard(t.Restore)
 		close(done)
-		t.Close()
+		guard(t.Close)
 		if readerStarted {
 			<-readerDone
-		}
-		if r != nil {
-			last = p.Index()
-			err = fmt.Errorf("tui: internal error: %v", r)
 		}
 	}()
 
 	if _, err := t.Write([]byte(EnterSeq)); err != nil {
-		return p.Index(), fmt.Errorf("tui: write: %w", err)
+		return p.Index(), fmt.Errorf("tui: writing frame: %w", err)
 	}
 
 	keys := make(chan []byte)
+	readErr := make(chan error) // unbuffered: the reader selects on done as well
 	readerStarted = true
 	go func() {
 		defer close(readerDone)
+		var rerr error
+		defer func() {
+			if r := recover(); r != nil {
+				rerr = fmt.Errorf("tui: internal error: %v", r)
+			}
+			if rerr != nil {
+				select {
+				case readErr <- rerr:
+				case <-done:
+				}
+			}
+		}()
 		buf := make([]byte, 256)
 		for {
 			n, err := t.Read(buf)
@@ -83,6 +110,9 @@ func Run(ctx context.Context, t Terminal, p *state.Player, opts Options) (last i
 				}
 			}
 			if err != nil {
+				// An error caused by cleanup's Close is never reported: done is
+				// closed before Close and the loop no longer receives.
+				rerr = fmt.Errorf("tui: reading keys: %w", err)
 				return
 			}
 		}
@@ -108,7 +138,7 @@ func Run(ctx context.Context, t Terminal, p *state.Player, opts Options) (last i
 		m := modelOf(p)
 		f := renderFn(m, w, h)
 		if _, err := t.Write(encodeFn(f, mode)); err != nil {
-			return fmt.Errorf("tui: write: %w", err)
+			return fmt.Errorf("tui: writing frame: %w", err)
 		}
 		if frameHook != nil {
 			frameHook(m, f)
@@ -116,13 +146,6 @@ func Run(ctx context.Context, t Terminal, p *state.Player, opts Options) (last i
 		return nil
 	}
 
-	// Both timers start stopped; a nil channel means "not armed".
-	deadline := time.NewTimer(time.Hour)
-	deadline.Stop()
-	defer deadline.Stop()
-	escTimer := time.NewTimer(time.Hour)
-	escTimer.Stop()
-	defer escTimer.Stop()
 	var deadlineC, escC <-chan time.Time
 
 	armDeadline := func() {
@@ -176,6 +199,8 @@ func Run(ctx context.Context, t Terminal, p *state.Player, opts Options) (last i
 				return p.Index(), nil
 			}
 			armEsc(dec.Pending())
+		case err := <-readErr:
+			return p.Index(), err
 		case <-escC:
 			escC = nil
 			if apply(dec.Flush()) {
@@ -195,4 +220,20 @@ func Run(ctx context.Context, t Terminal, p *state.Player, opts Options) (last i
 		}
 		armDeadline()
 	}
+}
+
+// guard runs one cleanup step; its error and any panic are dropped so the next step runs.
+func guard(f func() error) {
+	defer func() { _ = recover() }()
+	_ = f()
+}
+
+// safeIndex is p.Index(), or 0 if that panics (a broken player must not break cleanup).
+func safeIndex(p *state.Player) (i int) {
+	defer func() {
+		if recover() != nil {
+			i = 0
+		}
+	}()
+	return p.Index()
 }
