@@ -3,6 +3,9 @@ package gui
 import (
 	"image"
 	"math"
+	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"golang.org/x/image/math/fixed"
 
@@ -76,8 +79,7 @@ func Layout(in LayoutInput) LayoutResult {
 	}
 	var r LayoutResult
 	r.CX = w / 2
-	r.Sp = LevelSp[l]
-	r.Parts = splitParts(in.Word)
+	r.Sp, r.Parts = shrinkSplit(in.Word, l, w, k, in.M)
 	r.Part = min(max(in.Part, 0), len(r.Parts)-1)
 	r.Text = r.Parts[r.Part]
 	r.Px = PxOf(r.Sp, k)
@@ -107,5 +109,125 @@ func Layout(in LayoutInput) LayoutResult {
 	return r
 }
 
-// splitParts is the single replaceable spot for shrink/split.
-func splitParts(word string) []string { return []string{word} }
+// rank5 maps the number of letter/digit clusters to the R9 table value.
+func rank5(l int) int {
+	switch {
+	case l <= 1:
+		return 0
+	case l <= 5:
+		return 1
+	case l <= 9:
+		return 2
+	case l <= 13:
+		return 3
+	default:
+		return 4
+	}
+}
+
+func isLetterDigitCluster(c string) bool {
+	r, _ := utf8.DecodeRuneInString(c)
+	return unicode.IsLetter(r) || unicode.IsDigit(r)
+}
+
+// prefixSums returns p with p[i] = sum(a[:i]).
+func prefixSums(a []fixed.Int26_6) []fixed.Int26_6 {
+	p := make([]fixed.Int26_6, len(a)+1)
+	for i, v := range a {
+		p[i+1] = p[i] + v
+	}
+	return p
+}
+
+// fitsAt reports the R23 fit rule for a text with advances adv: the focus
+// cluster fi is centred at cx and the whole text stays inside [0, w].
+func fitsAt(adv []fixed.Int26_6, fi, cx, w int) bool {
+	if len(adv) == 0 {
+		return true
+	}
+	var pre, total fixed.Int26_6
+	for i, a := range adv {
+		if i < fi {
+			pre += a
+		}
+		total += a
+	}
+	o := fixed.I(cx) - pre - adv[fi]/2
+	return o >= 0 && o+total <= fixed.I(w)
+}
+
+// shrinkSplit implements R23: shrink in ShrinkStepSp steps down to MinSp, then
+// split greedily at MinSp. It returns the size in sp and the display steps.
+func shrinkSplit(word string, level, w int, k float32, m Measurer) (int, []string) {
+	cx := w / 2
+	cs := orp.Clusters(word)
+	n := len(cs)
+	if n == 0 {
+		return LevelSp[level], []string{word}
+	}
+	whole := func(sp int) bool {
+		adv := m.Advances(cs, PxOf(sp, k))
+		return fitsAt(adv, orp.Index(word), cx, w)
+	}
+	if whole(MinSp) {
+		for sp := LevelSp[level]; sp > MinSp; sp -= ShrinkStepSp {
+			if whole(sp) {
+				return sp, []string{word}
+			}
+		}
+		return MinSp, []string{word}
+	}
+
+	px := PxOf(MinSp, k)
+	adv := m.Advances(cs, px)
+	da := m.Advances([]string{"-"}, px)[0]
+	pre := prefixSums(adv)
+	// cnt[i] = letter/digit clusters before i; lpos = their indices.
+	cnt := make([]int, n+1)
+	var lpos []int
+	for i, c := range cs {
+		cnt[i+1] = cnt[i]
+		if isLetterDigitCluster(c) {
+			cnt[i+1]++
+			lpos = append(lpos, i)
+		}
+	}
+	// fits reports whether clusters i..j-1 (plus "-" when j < n) fit.
+	fits := func(i, j int) bool {
+		dash := j < n
+		cnum := j - i
+		if dash {
+			cnum++
+		}
+		var fi int // absolute index; == j means the dash
+		if L := cnt[j] - cnt[i]; L == 0 {
+			fi = i + (cnum-1)/2
+		} else {
+			fi = lpos[cnt[i]+rank5(L)]
+		}
+		fa := da
+		if fi < n && fi < j {
+			fa = adv[fi]
+		}
+		total := pre[j] - pre[i]
+		if dash {
+			total += da
+		}
+		o := fixed.I(cx) - (pre[fi] - pre[i]) - fa/2
+		return o >= 0 && o+total <= fixed.I(w)
+	}
+	var parts []string
+	for i := 0; i < n; {
+		j := i + 1
+		for j < n && fits(i, j+1) {
+			j++
+		}
+		p := strings.Join(cs[i:j], "")
+		if j < n {
+			p += "-"
+		}
+		parts = append(parts, p)
+		i = j
+	}
+	return MinSp, parts
+}
