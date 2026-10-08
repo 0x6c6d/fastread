@@ -93,43 +93,44 @@ func Render(m Model, w, h int) Frame {
 		return f
 	}
 	row := f.Cells[h/2]
-	put := func(x int, c string, cw int, st Style) {
-		if x < 0 || x >= w {
-			return
-		}
-		row[x] = Cell{Text: c, Style: st}
-		if cw == 2 && x+1 < w {
-			row[x+1] = Cell{Cont: true}
-		}
-	}
 	cs := orp.Clusters(m.Word)
 	if len(cs) == 0 {
 		return f
 	}
 	fi := orp.Index(m.Word)
 	fc := FocusColumn(w)
-	// left of focus, walking backwards
-	x := fc
-	for i := fi - 1; i >= 0; i-- {
-		cw := uniseg.StringWidth(cs[i])
-		if cw <= 0 {
-			continue
+	// Cell width of each cluster; zero-width clusters take one cell, drawn after U+25CC.
+	texts := make([]string, len(cs))
+	cws := make([]int, len(cs))
+	for i, c := range cs {
+		texts[i] = c
+		cws[i] = uniseg.StringWidth(c)
+		if cws[i] <= 0 {
+			texts[i] = "\u25cc" + c
+			cws[i] = 1
 		}
-		x -= cw
-		put(x, cs[i], cw, StylePlain)
 	}
-	x = fc
-	for i := fi; i < len(cs); i++ {
-		cw := uniseg.StringWidth(cs[i])
-		if cw <= 0 {
-			continue
+	starts := make([]int, len(cs))
+	starts[fi] = fc
+	for k := fi + 1; k < len(cs); k++ {
+		starts[k] = starts[k-1] + cws[k-1]
+	}
+	for k := fi - 1; k >= 0; k-- {
+		starts[k] = starts[k+1] - cws[k]
+	}
+	for k := range cs {
+		x, cw := starts[k], cws[k]
+		if x < 0 || x+cw > w {
+			continue // never draw part of a cluster
 		}
 		st := StylePlain
-		if i == fi {
+		if k == fi {
 			st = StyleFocus
 		}
-		put(x, cs[i], cw, st)
-		x += cw
+		row[x] = Cell{Text: texts[k], Style: st}
+		if cw == 2 {
+			row[x+1] = Cell{Cont: true}
+		}
 	}
 	return f
 }
