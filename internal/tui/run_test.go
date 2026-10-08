@@ -23,6 +23,7 @@ type fakeTerm struct {
 	w0, h0     int
 	panicSize  bool
 	makeRawErr error
+	writeDelay time.Duration // slept on every Write call (outside the lock)
 
 	mu                         sync.Mutex
 	out                        bytes.Buffer
@@ -37,6 +38,9 @@ func newFakeTerm() *fakeTerm {
 func (f *fakeTerm) Read(p []byte) (int, error) { return f.r.Read(p) }
 
 func (f *fakeTerm) Write(p []byte) (int, error) {
+	if f.writeDelay > 0 {
+		time.Sleep(f.writeDelay)
+	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return f.out.Write(p)
