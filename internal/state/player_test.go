@@ -270,3 +270,117 @@ func TestPlayerKeys(t *testing.T) {
 		}
 	})
 }
+
+func wpmTokens(n int, paraEnd bool) []tokenize.Token {
+	toks := make([]tokenize.Token, n)
+	for i := range toks {
+		toks[i] = tokenize.Token{Text: "aa"}
+	}
+	toks[n-1].ParaEnd = paraEnd
+	return toks
+}
+
+func TestEffectiveWPM(t *testing.T) {
+	ms := time.Millisecond
+	t.Run("pause and resume", func(t *testing.T) {
+		clk := &fakeClock{now: t0}
+		if _, ok := (&Player{clock: clk}).EffectiveWPM(); ok {
+			t.Fatal("ok before Start")
+		}
+		p := NewPlayer(Config{Tokens: wpmTokens(10, true), WPM: 300, Size: 3, Clock: clk})
+		step := func(at time.Duration, act func(), wantWPM int, wantOK bool) {
+			t.Helper()
+			clk.now = t0.Add(at)
+			if act != nil {
+				act()
+			}
+			got, ok := p.EffectiveWPM()
+			if got != wantWPM || ok != wantOK {
+				t.Fatalf("at %v: got (%d, %v), want (%d, %v)", at, got, ok, wantWPM, wantOK)
+			}
+		}
+		tick := func() { p.Tick() }
+		pause := func() { p.Apply(ActTogglePause) }
+		step(200*ms, tick, 0, false)
+		step(400*ms, tick, 300, true)
+		step(600*ms, tick, 300, true)
+		step(800*ms, tick, 300, true)
+		step(800*ms, pause, 300, true)
+		step(10800*ms, nil, 300, true)
+		step(10800*ms, pause, 300, true) // resume
+		step(11000*ms, tick, 300, true)
+		step(11100*ms, nil, 273, true)
+		step(11100*ms, func() { p.Apply(ActNext) }, 273, true)
+	})
+	t.Run("finish freezes", func(t *testing.T) {
+		clk := &fakeClock{now: t0}
+		p := NewPlayer(Config{Tokens: wpmTokens(6, false), WPM: 600, Size: 3, Clock: clk})
+		for i := 1; i <= 6; i++ {
+			clk.now = t0.Add(time.Duration(i) * 100 * ms)
+			p.Tick()
+		}
+		if !p.Finished() {
+			t.Fatal("not finished")
+		}
+		for _, extra := range []time.Duration{0, time.Minute} {
+			clk.now = t0.Add(600*ms + extra)
+			if got, ok := p.EffectiveWPM(); got != 600 || !ok {
+				t.Fatalf("extra %v: got (%d, %v), want (600, true)", extra, got, ok)
+			}
+		}
+	})
+}
+
+func TestScheduleNoDrift(t *testing.T) {
+	words := []string{"word", "word,", "word.", "extraordinarily", "naïve"}
+	toks := make([]tokenize.Token, 100)
+	for i := range toks {
+		toks[i] = tokenize.Token{Text: words[i%len(words)], ParaEnd: i%10 == 9 || i == 99}
+	}
+	d := func(i int) time.Duration { return timing.DelayPara(toks[i].Text, 600, toks[i].ParaEnd) }
+	sum := func(upTo int) time.Duration {
+		var s time.Duration
+		for i := 0; i <= upTo; i++ {
+			s += d(i)
+		}
+		return s
+	}
+	var total time.Duration = sum(99)
+	run := func(t *testing.T, late func(n int) time.Duration, multi bool) {
+		clk := &fakeClock{now: t0}
+		p := NewPlayer(Config{Tokens: toks, WPM: 600, Size: 3, Clock: clk})
+		jit := []time.Duration{0, 3, 7, 9}
+		sawMulti := false
+		for n := 0; !p.Finished(); n++ {
+			if n > 1000 {
+				t.Fatal("did not finish")
+			}
+			before := p.Index()
+			clk.now = p.Deadline().Add(late(n) + jit[n%4]*time.Millisecond)
+			p.Tick()
+			if p.Index()-before > 1 {
+				sawMulti = true
+			}
+			if want := t0.Add(sum(p.Index())); !p.Deadline().Equal(want) {
+				t.Fatalf("tick %d idx %d: deadline %v, want %v", n, p.Index(), p.Deadline(), want)
+			}
+		}
+		if p.Index() != 99 || !p.Deadline().Equal(t0.Add(total)) {
+			t.Fatalf("end: idx %d deadline %v, want 99 / %v", p.Index(), p.Deadline(), t0.Add(total))
+		}
+		if multi && !sawMulti {
+			t.Fatal("no Tick advanced more than one word")
+		}
+	}
+	t.Run("jitter", func(t *testing.T) {
+		run(t, func(int) time.Duration { return 0 }, false)
+	})
+	t.Run("late tick", func(t *testing.T) {
+		run(t, func(n int) time.Duration {
+			if n == 5 {
+				return 300 * time.Millisecond
+			}
+			return 0
+		}, true)
+	})
+}

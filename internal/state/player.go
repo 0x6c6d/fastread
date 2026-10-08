@@ -2,6 +2,7 @@
 package state
 
 import (
+	"math"
 	"time"
 
 	"github.com/0x6c6d/fastread/internal/timing"
@@ -51,6 +52,12 @@ type Player struct {
 	deadline     time.Time
 	remaining    time.Duration // time left on the current word while paused
 	clock        Clock
+
+	started   bool
+	completed int           // words whose deadline passed inside Tick
+	unpaused  time.Duration // closed playing segments
+	segStart  time.Time     // start of the open playing segment
+	endTime   time.Time     // when the player finished
 }
 
 // NewPlayer returns a Player in the playing state. Start is clamped to [0, len-1].
@@ -90,6 +97,10 @@ func (p *Player) delay() time.Duration {
 
 // Start sets the deadline to now plus the delay of the current word.
 func (p *Player) Start() {
+	p.started = true
+	p.completed = 0
+	p.unpaused = 0
+	p.segStart = p.clock.Now()
 	p.deadline = p.clock.Now().Add(p.delay())
 }
 
@@ -101,8 +112,11 @@ func (p *Player) Tick() (finished bool) {
 	}
 	now := p.clock.Now()
 	for p.playing && !now.Before(p.deadline) {
+		p.completed++
 		if p.index >= len(p.tokens)-1 {
 			p.finished = true
+			p.endTime = now
+			p.unpaused += now.Sub(p.segStart)
 			return true
 		}
 		p.index++
@@ -128,7 +142,9 @@ func (p *Player) Apply(a Action) (quit bool) {
 				p.remaining = 0
 			}
 			p.playing = false
+			p.unpaused += now.Sub(p.segStart)
 		} else {
+			p.segStart = now
 			p.deadline = now.Add(p.remaining)
 			p.playing = true
 		}
@@ -222,3 +238,20 @@ func (p *Player) ShowProgress() bool { return p.showProgress }
 
 // ShowHelp reports whether the help overlay is shown.
 func (p *Player) ShowHelp() bool { return p.showHelp }
+
+// EffectiveWPM returns words completed per minute of unpaused playing time, rounded to the
+// nearest integer. ok is false before Start, while fewer than 2 words were completed, or
+// when no unpaused time has elapsed (the UI then shows "—").
+func (p *Player) EffectiveWPM() (wpm int, ok bool) {
+	if !p.started || p.completed < 2 {
+		return 0, false
+	}
+	t := p.unpaused
+	if p.playing && !p.finished {
+		t += p.clock.Now().Sub(p.segStart)
+	}
+	if t <= 0 {
+		return 0, false
+	}
+	return int(math.Round(float64(p.completed) / t.Minutes())), true
+}
