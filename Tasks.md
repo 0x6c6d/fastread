@@ -94,7 +94,7 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-
 | T042 | 4 | Progress and help rows | T039 | sonnet | done | render.go HelpText + addRows (help row 0, progress row h-1); rows_test.go |
 | T043 | 4 | Encode hardening (control stripping) and colour modes | T027, T041, T042 | opus | done | encode.go cleanCell + tick default colour + clipping; encode_test.go (+FuzzRenderEncode) |
 | T044 | 4 | Golden frames (sizes 1-5, ticks, toggles, fallbacks) | T041, T042, T043 | sonnet | done | golden_test.go + 28 testdata/golden files |
-| T045 | 4 | Phase 4 gate (frame performance, render invariants) | T044 | sonnet | todo | also Phase 4 exit criterion |
+| T045 | 4 | Phase 4 gate (frame performance, render invariants) | T044 | sonnet | done | perf_test.go, invariants_test.go (3000 cases); Phase 4 exit criterion passes |
 | T046 | 5 | Player split-step timing (SetParts) | T031 | sonnet | todo | |
 | T047 | 5 | Key decoder with escape sequences (TestKeyDecode) | T007 | sonnet | todo | |
 | T048 | 5 | TUI loop on Player deadlines (keys, split steps, drift) | T041, T042, T046, T047 | opus | todo | moves Run from run.go into loop.go |
