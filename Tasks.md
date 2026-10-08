@@ -96,7 +96,7 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-
 | T044 | 4 | Golden frames (sizes 1-5, ticks, toggles, fallbacks) | T041, T042, T043 | sonnet | done | golden_test.go + 28 testdata/golden files |
 | T045 | 4 | Phase 4 gate (frame performance, render invariants) | T044 | sonnet | done | perf_test.go, invariants_test.go (3000 cases); Phase 4 exit criterion passes |
 | T046 | 5 | Player split-step timing (SetParts) | T031 | sonnet | done | player.go SetParts/Part/Parts; steps_test.go |
-| T047 | 5 | Key decoder with escape sequences (TestKeyDecode) | T007 | sonnet | todo | |
+| T047 | 5 | Key decoder with escape sequences (TestKeyDecode) | T007 | sonnet | done | internal/tui keys.go KeyDecoder + keys_test.go (TestKeyDecode, FuzzKeyDecode) |
 | T048 | 5 | TUI loop on Player deadlines (keys, split steps, drift) | T041, T042, T046, T047 | opus | todo | moves Run from run.go into loop.go |
 | T049 | 5 | SIGWINCH re-layout and the real /dev/tty (TestLoopResize) | T048 | opus | todo | |
 | T050 | 5 | Restore on every exit path and the leak test | T049 | opus | todo | |
