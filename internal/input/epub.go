@@ -17,7 +17,8 @@ import (
 const epubContainerPath = "META-INF/container.xml"
 
 // loadEPUB opens the zip in b, reads the linear XHTML spine items in spine order and returns
-// their paragraphs concatenated. Every error wraps ErrCorruptEPUB.
+// their paragraphs concatenated. An encrypted (DRM) spine is rejected by checkEncryption before
+// any spine item is read (ErrUnsupported); every other error wraps ErrCorruptEPUB.
 func loadEPUB(b []byte, lim Limits) ([]string, error) {
 	var paras []string
 	err := recoverAs(ErrCorruptEPUB, func() error {
@@ -29,6 +30,9 @@ func loadEPUB(b []byte, lim Limits) ([]string, error) {
 		if err != nil {
 			return err
 		}
+		if err := checkEncryption(z, names, lim); err != nil {
+			return err
+		}
 		for _, name := range names {
 			doc, err := z.read(name)
 			if err != nil {
@@ -38,6 +42,9 @@ func loadEPUB(b []byte, lim Limits) ([]string, error) {
 		}
 		return nil
 	})
+	if errors.Is(err, errDRM) {
+		return nil, err
+	}
 	if err != nil {
 		return nil, corruptEPUB(err)
 	}
