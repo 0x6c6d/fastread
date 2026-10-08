@@ -39,7 +39,7 @@ CMD
 expect_fail "negative: xml.NewDecoder used outside safe.go" <<'CMD'
 grep -n 'xml\.NewDecoder' $(ls internal/input/*.go | grep -v -e '_test\.go$' -e 'safe\.go$')
 CMD
-expect_fail "negative: internal/input depends on UI, network or non-stdlib code" <<'CMD'
+expect_fail "negative: internal/input depends on UI, Gio or network packages" <<'CMD'
 out="$(go list -deps ./internal/input)" || exit 0
 printf '%s\n' "$out" | grep -q -x -e 'net' -e 'net/http' -e 'github.com/0x6c6d/fastread/internal/tui' \
   -e 'github.com/0x6c6d/fastread/internal/gui' -e 'gioui.org.*'

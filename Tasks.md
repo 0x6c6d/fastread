@@ -45,7 +45,7 @@ The supervisor prepends these, verbatim, to every worker brief:
 
 ## Task List
 
-Batches: 1 = phases 0-1 (T000-T012); next free ID: T013
+Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); next free ID: T027
 
 | ID | Phase | Title | Depends-on | Model | Status | Notes |
 |----|-------|-------|------------|-------|--------|-------|
@@ -62,6 +62,20 @@ Batches: 1 = phases 0-1 (T000-T012); next free ID: T013
 | T010 | 1 | CLI wiring (input to TUI/GUI) | T002, T005, T007, T008, T009 | opus | todo | |
 | T011 | 1 | E2E harness and TestE2EBasic (tmux) | T010 | sonnet | todo | also Phase 1 exit criterion |
 | T012 | 1 | MIT LICENSE file | T000 | opus | todo | |
+| T013 | 2 | Hardened input helpers (size caps, zip, XML, recover) | T005 | opus | todo | |
+| T014 | 2 | Source selection with the path-like rule (A3) | T005, T010 | opus | todo | |
+| T015 | 2 | File type detection, file loading and loader stubs | T010, T013 | opus | todo | |
+| T016 | 2 | Markdown stripper | T015 | sonnet | todo | |
+| T017 | 2 | XHTML to paragraphs (x/net/html pin) | T013 | opus | todo | |
+| T018 | 2 | EPUB loader (container, OPF spine, zip-entry resolution) | T015, T017 | opus | todo | |
+| T019 | 2 | EPUB DRM detection (encryption.xml) | T018 | opus | todo | |
+| T020 | 2 | FB2 loader (body text only) | T015 | sonnet | todo | |
+| T021 | 2 | PDF text-layer loader (ledongthuc/pdf pin) | T015 | opus | todo | |
+| T022 | 2 | PDF hostile-input suite | T021 | opus | todo | |
+| T023 | 2 | Flag validation table and help/version tests | T010 | opus | todo | |
+| T024 | 2 | Typed-error chain and exit-code mapping | T014, T015, T018, T021 | opus | todo | |
+| T025 | 2 | Performance test 5 MB load and tokenize | T015 | sonnet | todo | |
+| T026 | 2 | Phase 2 gate (fixtures through the CLI flow) | T016, T019, T020, T022, T023, T024, T025 | sonnet | todo | also Phase 2 exit criterion |
 
 Status values: `todo` · `done` · `blocked` · `superseded`. No pipe characters inside cells.
 
@@ -79,3 +93,14 @@ Run with the `loop-coding` skill (`/loop-coding Tasks.md`). The authoritative pr
    one tier up, then `blocked`.
 5. Nothing selectable → run Plan.md's Global Definition of Done; done when it passes.
 6. Friction in the loop itself → one row in `Improvements.md` (see SKILL.md, *Improvement log*); no round, no block.
+
+## Changelog
+
+- 2026-10-08, batch 2 (Plan.md v1, phase 2): added T013-T026 as `todo`. Reviewed the orphaned
+  drafts T013-T016 from an interrupted run (kept IDs): T015 now also depends on T010 (its
+  script runs the wired binary), T013's negative-check label corrected, T013-T016 scripts made
+  executable. Phase 2 tests map: TestSelectSource T014; TestDetectType, TestUnsupportedMismatch
+  T015; TestMarkdownStrip T016; TestEPUBSpineOrder/Corrupt/Limits T018; TestEPUBEncrypted T019;
+  TestFB2BodyOnly T020; TestPDFText/NoText T021; TestPDFCorrupt T022; TestFlags,
+  TestHelpVersion T023; TestExitCodes, TestErrorsIsChain T024; TestPerfLoadTokenize5MB T025;
+  exit criterion in T026.
