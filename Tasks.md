@@ -101,7 +101,7 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-
 | T049 | 5 | SIGWINCH re-layout and the real /dev/tty (TestLoopResize) | T048 | opus | done | terminal.go Resizer, newTTY, idempotent Close; loop.go resize case; resize_test.go, terminal_test.go (pty); go.mod x/sys still marked indirect |
 | T050 | 5 | Restore on every exit path and the leak test | T049 | opus | done | loop.go guarded single cleanup, reader error reporting; exit_test.go (12 exit paths, 6 panic rows, 72 leak runs) |
 | T051 | 5 | E2E stdin, not-found and no-argument TTY (tmux) | T011, T024, T034 | sonnet | done | e2e/cli_test.go (TestE2EStdin, TestE2ENotFound, TestE2ENoArgTTY) |
-| T052 | 5 | E2E terminal restore (TestE2ERestore) | T011, T050 | sonnet | todo | adds e2e helpers paneState, appPID |
+| T052 | 5 | E2E terminal restore (TestE2ERestore) | T011, T050 | sonnet | done | e2e/proc_test.go (paneState, appPID), restore_test.go (5 exit ways) |
 | T053 | 5 | E2E focus column with a pane-screen parser | T011, T048 | sonnet | todo | adds e2e helper parseScreen |
 | T054 | 5 | E2E live resize (TestE2EResize) | T049, T053 | sonnet | todo | |
 | T055 | 5 | E2E resume and SIGTERM state save | T034, T052 | sonnet | todo | |
