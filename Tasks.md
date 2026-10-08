@@ -45,7 +45,7 @@ The supervisor prepends these, verbatim, to every worker brief:
 
 ## Task List
 
-Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-T036); 4 = phase 4 (T037-T045); next free ID: T046
+Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-T036); 4 = phase 4 (T037-T045); 5 = phase 5 (T046-T056); next free ID: T057
 
 | ID | Phase | Title | Depends-on | Model | Status | Notes |
 |----|-------|-------|------------|-------|--------|-------|
@@ -95,6 +95,17 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-
 | T043 | 4 | Encode hardening (control stripping) and colour modes | T027, T041, T042 | opus | todo | |
 | T044 | 4 | Golden frames (sizes 1-5, ticks, toggles, fallbacks) | T041, T042, T043 | sonnet | todo | |
 | T045 | 4 | Phase 4 gate (frame performance, render invariants) | T044 | sonnet | todo | also Phase 4 exit criterion |
+| T046 | 5 | Player split-step timing (SetParts) | T031 | sonnet | todo | |
+| T047 | 5 | Key decoder with escape sequences (TestKeyDecode) | T007 | sonnet | todo | |
+| T048 | 5 | TUI loop on Player deadlines (keys, split steps, drift) | T041, T042, T046, T047 | opus | todo | moves Run from run.go into loop.go |
+| T049 | 5 | SIGWINCH re-layout and the real /dev/tty (TestLoopResize) | T048 | opus | todo | |
+| T050 | 5 | Restore on every exit path and the leak test | T049 | opus | todo | |
+| T051 | 5 | E2E stdin, not-found and no-argument TTY (tmux) | T011, T024, T034 | sonnet | todo | |
+| T052 | 5 | E2E terminal restore (TestE2ERestore) | T011, T050 | sonnet | todo | adds e2e helpers paneState, appPID |
+| T053 | 5 | E2E focus column with a pane-screen parser | T011, T048 | sonnet | todo | adds e2e helper parseScreen |
+| T054 | 5 | E2E live resize (TestE2EResize) | T049, T053 | sonnet | todo | |
+| T055 | 5 | E2E resume and SIGTERM state save | T034, T052 | sonnet | todo | |
+| T056 | 5 | Phase 5 gate (live keys e2e, exit criterion) | T050, T051, T052, T053, T054, T055 | sonnet | todo | also Phase 5 exit criterion |
 
 Status values: `todo` · `done` · `blocked` · `superseded`. No pipe characters inside cells.
 
@@ -169,3 +180,38 @@ Run with the `loop-coding` skill (`/loop-coding Tasks.md`). The authoritative pr
   chars T043; §5 frame time T045; §5 legal font provenance T037 (notice in phase 7); AC11
   T043; AC12 T038, T044; AC13 unit part T041; AC14 unit part T038, T039; AC15 T040; AC16
   T039, T044; AC17 T041; AC22 frames T042, T044; AC28 frame part T045.
+
+- 2026-10-08, batch 5 (Plan.md v1.1, phase 5): added T046-T056 as `todo` (3 opus, 8 sonnet).
+  No Plan.md edit. Decisions: split-step timing (Plan row 28, left open by phase 4) lives in
+  `state.Player` as `SetParts`/`Part`/`Parts` (T046; UI-independent, so phase 6 reuses it;
+  non-final step = `timing.Delay(part minus "-")`, final = `DelayPara(part, ParaEnd)`, equal
+  parts are a no-op so Up/Down keep the current deadline, a changed split keeps the time
+  already spent in the step, so deadlines stay absolute); the loop only computes
+  `Split` and calls `SetParts` (T048). `Run` moves from `run.go` into `loop.go` with test
+  seams `renderFn`, `encodeFn`, `frameHook`. Lone Esc quits after `EscTimeout` = 50 ms;
+  unknown CSI/SS3 sequences are swallowed, Ctrl+C always quits (T047). SIGWINCH via an
+  optional `Resizer` interface on `Terminal` (real tty: `signal.Notify`/`signal.Stop` in
+  `terminal.go`), so the existing fake terminals in cmd tests stay valid; real tty tested on
+  a pty pair via `x/sys/unix` (`TestTTYPty`, T049). A hung-up tty (Read error) ends Run with
+  an error, exit 1, position still saved by cmd (T050). No cmd change in phase 5: SIGINT/
+  SIGTERM save and resume wiring stay with T034; T055 only adds the Plan's e2e tests on top.
+  Extra tests beyond the Plan list: TestPlayerSteps, TestPlayerStepsNoDrift, FuzzKeyDecode,
+  TestLoopKeys, TestLoopSplitSteps, TestLoopExitPaths, TestTTYPty, TestParseScreen,
+  TestE2EKeys (live R26-R28 keys through real tmux sequences, in the gate). tmux facts
+  checked here (3.5a): send-keys Right/Home/PPage/F1/Escape/C-c → `ESC[C`, `ESC[1~`,
+  `ESC[5~`, `ESCOP`, `ESC`, 0x03; `#{alternate_on}`, `#{cursor_flag}` exist; `capture-pane
+  -e` reports `91`, `38;5;196`, `38;2;255;0;0`, `1;7` unchanged; `resize-window` to 1×1 on a
+  detached session works. Phase 5 tests map: TestPlayerSteps, TestPlayerStepsNoDrift T046;
+  TestKeyDecode (+FuzzKeyDecode) T047; TestLoopKeys, TestLoopSplitSteps,
+  TestLoopDriftRealClock T048; TestLoopResize, TestTTYPty T049; TestRestoreOnPanic,
+  TestLoopExitPaths, TestLoopNoLeak T050; TestE2EStdin, TestE2ENotFound, TestE2ENoArgTTY
+  T051; TestE2ERestore T052; TestParseScreen, TestE2EFocusColumn T053; TestE2EResize T054;
+  TestE2ESIGTERMSavesState, TestE2EResume T055; TestE2EKeys + exit criterion T056. README
+  coverage for phase 5: R1 stdin/TTY rule live T051 (+T011); R7 not-found live T051; R13
+  T050, T052; R14 live NO_COLOR/truecolor T053; R16 live T053; R17 SIGWINCH T049, T054;
+  R20 per-step timing T046, T048; R26 keys T047, T048, T056; R27/R28 live toggles T056;
+  R29 live T055; R32 leak T050, SIGTERM/SIGINT T052, T055; §3 flow step 6 (keys and resize
+  during delays) T048, T049; §5 timing accuracy real clock T048 (fake clock stays T031,
+  T046); AC1 T051 (+T011); AC10 T050, T052; AC13 live T053; AC14 live T049, T054; AC21
+  terminal-key part T047; AC23 live T055; AC26 T050, T055; AC28 drift T048. R21-R25 and
+  AC18-AC20 are GUI (phase 6), not phase 5.
