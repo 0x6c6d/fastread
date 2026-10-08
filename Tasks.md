@@ -45,7 +45,7 @@ The supervisor prepends these, verbatim, to every worker brief:
 
 ## Task List
 
-Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-T036); 4 = phase 4 (T037-T045); 5 = phase 5 (T046-T056); next free ID: T057
+Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-T036); 4 = phase 4 (T037-T045); 5 = phase 5 (T046-T056); 6 = phase 6 (T057-T065); next free ID: T066
 
 | ID | Phase | Title | Depends-on | Model | Status | Notes |
 |----|-------|-------|------------|-------|--------|-------|
@@ -106,6 +106,15 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-
 | T054 | 5 | E2E live resize (TestE2EResize) | T049, T053 | sonnet | todo | |
 | T055 | 5 | E2E resume and SIGTERM state save | T034, T052 | sonnet | todo | |
 | T056 | 5 | Phase 5 gate (live keys e2e, exit criterion) | T050, T051, T052, T053, T054, T055 | sonnet | todo | also Phase 5 exit criterion |
+| T057 | 6 | GUI pure layout: focus x, baseline, ticks | T008, T028 | sonnet | todo | |
+| T058 | 6 | GUI shrink and split (R23), all-sizes focus invariant | T057 | sonnet | todo | |
+| T059 | 6 | GUI help and progress geometry (pure) | T057, T042 | sonnet | todo | |
+| T060 | 6 | Gio key map (TestGUIKeyMap) | T008, T030 | sonnet | todo | |
+| T061 | 6 | Gio window: layout drawing, Player deadlines, keys, resize | T035, T046, T058, T059, T060 | opus | todo | verify uses scripts/verify/_gui.sh (xwd pixel checks) |
+| T062 | 6 | GUI exit path and display errors (finish once, R24) | T061 | opus | todo | |
+| T063 | 6 | E2E Xvfb harness and TestE2EGUIXvfb | T011, T062 | sonnet | todo | adds e2e helpers newXvfb, startGUI, readIndex |
+| T064 | 6 | E2E GUI error paths and the nogui binary | T011, T062 | sonnet | todo | |
+| T065 | 6 | Phase 6 gate (live GUI keys e2e, exit criterion) | T063, T064 | sonnet | todo | also Phase 6 exit criterion |
 
 Status values: `todo` · `done` · `blocked` · `superseded`. No pipe characters inside cells.
 
@@ -215,3 +224,44 @@ Run with the `loop-coding` skill (`/loop-coding Tasks.md`). The authoritative pr
   T046); AC1 T051 (+T011); AC10 T050, T052; AC13 live T053; AC14 live T049, T054; AC21
   terminal-key part T047; AC23 live T055; AC26 T050, T055; AC28 drift T048. R21-R25 and
   AC18-AC20 are GUI (phase 6), not phase 5.
+
+- 2026-10-08, batch 6 (Plan.md v1.1, phase 6): added T057-T065 as `todo` (2 opus, 7
+  sonnet). No Plan.md edit. New supervisor-owned verify helpers: `scripts/verify/_gui.sh`
+  (own Xvfb via `-displayfd`, app start/keys/wait, cleanup trap) and
+  `scripts/verify/_xwdcheck.go` (XWD dump facts: size, black share, red box, tick rows,
+  top/bottom ink; leading `_` keeps it out of every package; gofmt-clean). Facts checked
+  here with scratch programs against gioui.org v0.10.3, x/image v0.36.0, uniseg v0.4.7 (module
+  cache, no network): Gio's shaper and `x/image/font/opentype` (unhinted, 72 DPI) give
+  identical advances and ascent/descent for all 2068 printable Latin-1 rune/size pairs, so
+  display-free tests measure with x/image; every literal value in T057-T059 (origins,
+  baselines, tick rects, shrink sizes, split steps, chrome rows) comes from a reference
+  implementation of the briefs' rules; under Xvfb Gio opens 600x300 px (PxPerDp 1), xwd
+  dumps show the drawn pixels (red box centred exactly on W/2, 2 px ticks at W/2-1..W/2,
+  also after `xdotool windowsize`), keys arrive only after `xdotool windowfocus --sync`
+  (names: q `Q`, `?` with Shift, Ctrl+C `C`+Ctrl, Release events too), `xdotool
+  windowclose` does not end a Gio window (close button tested only via `windowErr(nil)`),
+  a bad `DISPLAY` or `WAYLAND_DISPLAY` yields `DestroyEvent.Err` (`wayland:
+  wl_display_connect failed: ...`) within ~10 ms (Risk "Gio v0.10.3 newness" path seen
+  working). Decisions: pure `Layout` takes a `Measurer` (cluster advances, metrics) and
+  never Gio types; baseline and ticks come from the level size so shrinking never moves
+  them; tick length max(2, ceil(ascent)/3), gap 4 px, white; shrink checks MinSp first then
+  walks down from the level size; the split rule mirrors `tui.Split` at 10 sp; help and
+  progress live in a separate pure `LayoutChrome` (14 sp) that takes no word, so toggles
+  cannot move the focus; the window measures and draws each grapheme cluster separately
+  (`gioMeasurer`, `op.Affine` sub-pixel offsets); the exit path is a Gio-free `session`
+  (`end` once, `guard`, `windowErr`), testable in every build. Extra tests beyond the Plan
+  list: TestLayoutChrome, TestGioMeasurer, TestGUIExitPath, TestE2EGUIKeys (live keys and
+  resume through the GUI, in the gate). The optional AC19 pixel check is run by the
+  T061/T065 scripts (xwd present, `import` absent), so D16 can report it as run. Phase 6
+  tests map: TestLayoutFocusX, TestLayoutBaseline, TestLayoutTicks T057;
+  TestLayoutShrinkSplit, TestLayoutFocusXAllSizes T058; TestLayoutChrome T059;
+  TestGUIKeyMap T060; TestGioMeasurer T061; TestGUIExitPath T062; TestE2EGUIXvfb T063;
+  TestE2EGUINoDisplay, TestE2EGUIBadDisplay, TestE2ENoguiBinary T064; TestE2EGUIKeys +
+  exit criterion, D8, D10-D13 T065. README coverage for phase 6: R21 T061, T063 (600x300,
+  resizable, black, goregular, no system fonts); R22 T057, T061 (pixels), T065; R23 T058,
+  T060, T061, T063; R24 T062, T064 (Wayland live "not run", error path via bogus
+  `WAYLAND_DISPLAY`); R25 T057-T059; R26 GUI T060, T061, T065; R27/R28 GUI T059, T061,
+  T065; R29 GUI T063, T065 (save wiring stays T035); R30 T057, T065; R31 T064, T065; R32
+  GUI signals T062, T063; R33 GUI focus invariant T058; AC18 T057, T058; AC19 T063 (+
+  pixels T061, T065); AC20 T062, T064; AC21 GUI part T060; AC25 T064, T065. Phase 7 keeps
+  docs, licences (incl. `third_party/gofont/LICENSE`) and TestE2EInputTypes.
