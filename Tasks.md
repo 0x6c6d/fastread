@@ -102,7 +102,7 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-
 | T050 | 5 | Restore on every exit path and the leak test | T049 | opus | done | loop.go guarded single cleanup, reader error reporting; exit_test.go (12 exit paths, 6 panic rows, 72 leak runs) |
 | T051 | 5 | E2E stdin, not-found and no-argument TTY (tmux) | T011, T024, T034 | sonnet | done | e2e/cli_test.go (TestE2EStdin, TestE2ENotFound, TestE2ENoArgTTY) |
 | T052 | 5 | E2E terminal restore (TestE2ERestore) | T011, T050 | sonnet | done | e2e/proc_test.go (paneState, appPID), restore_test.go (5 exit ways) |
-| T053 | 5 | E2E focus column with a pane-screen parser | T011, T048 | sonnet | todo | adds e2e helper parseScreen |
+| T053 | 5 | E2E focus column with a pane-screen parser | T011, T048 | sonnet | done | e2e/screen_test.go (parseScreen, focusCols, tickCols), focus_test.go (4 subtests) |
 | T054 | 5 | E2E live resize (TestE2EResize) | T049, T053 | sonnet | todo | |
 | T055 | 5 | E2E resume and SIGTERM state save | T034, T052 | sonnet | todo | |
 | T056 | 5 | Phase 5 gate (live keys e2e, exit criterion) | T050, T051, T052, T053, T054, T055 | sonnet | todo | also Phase 5 exit criterion |
