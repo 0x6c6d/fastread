@@ -45,7 +45,7 @@ The supervisor prepends these, verbatim, to every worker brief:
 
 ## Task List
 
-Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); next free ID: T027
+Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-T036); next free ID: T037
 
 | ID | Phase | Title | Depends-on | Model | Status | Notes |
 |----|-------|-------|------------|-------|--------|-------|
@@ -76,6 +76,16 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); next free ID: T027
 | T024 | 2 | Typed-error chain and exit-code mapping | T014, T015, T018, T021 | opus | todo | |
 | T025 | 2 | Performance test 5 MB load and tokenize | T015 | sonnet | todo | |
 | T026 | 2 | Phase 2 gate (fixtures through the CLI flow) | T016, T019, T020, T022, T023, T024, T025 | sonnet | todo | also Phase 2 exit criterion |
+| T027 | 3 | Full tokenizer (paragraph breaks, Sanitize) | T002 | opus | todo | |
+| T028 | 3 | Unicode ORP table tests (TestPosition, TestIndex) | T003 | sonnet | todo | |
+| T029 | 3 | Timing multipliers (TestDelay, TestDelayPara) | T001 | sonnet | todo | |
+| T030 | 3 | Player live keys (R26) with pause and jump timing | T004 | sonnet | todo | rewrites T004's TestPlayerQuit (keys now change state) |
+| T031 | 3 | Player effective wpm and drift-free schedule | T030 | sonnet | todo | |
+| T032 | 3 | Resume store: directory, atomic save, delete, modes | T004 | opus | todo | |
+| T033 | 3 | Resume store: load, corrupt entries, start index | T032 | opus | todo | |
+| T034 | 3 | Resume wiring in cmd (TUI path, signals, raw/stdin never persisted) | T024, T033 | opus | todo | |
+| T035 | 3 | Resume on the GUI exit path (finish callback) | T034 | opus | todo | |
+| T036 | 3 | Phase 3 gate (core pipeline integration tests) | T026, T027, T028, T029, T031, T035 | sonnet | todo | also Phase 3 exit criterion |
 
 Status values: `todo` · `done` · `blocked` · `superseded`. No pipe characters inside cells.
 
@@ -104,3 +114,21 @@ Run with the `loop-coding` skill (`/loop-coding Tasks.md`). The authoritative pr
   TestFB2BodyOnly T020; TestPDFText/NoText T021; TestPDFCorrupt T022; TestFlags,
   TestHelpVersion T023; TestExitCodes, TestErrorsIsChain T024; TestPerfLoadTokenize5MB T025;
   exit criterion in T026.
+
+- 2026-10-08, batch 3 (Plan.md v1, phase 3): added T027-T036 as `todo` (5 opus, 5 sonnet). Phase 3 tests map: TestTokenize, TestSanitize (+FuzzTokenize) T027; TestPosition,
+  TestIndex T028; TestDelay, TestDelayPara T029; TestPlayerKeys T030; TestEffectiveWPM,
+  TestScheduleNoDrift T031; TestResumeDirFallback/Modes/Atomic/DeleteAtEnd T032;
+  TestResumeRoundTrip/HashMismatch/CorruptIgnored, TestStartIndex (+FuzzDecodeEntry) T033;
+  TestRunRawNoState (+TestRunResumeFile, TestRunSignalSaves) T034; TestRunGUIFinishSaves
+  T035; exit criterion in T036. Decisions: T030 deliberately rewrites T004's TestPlayerQuit
+  (its "no other action changes state" clause is obsolete once R26 keys exist; name kept so
+  T004.sh still passes). T029 counts letter/digit runes (not grapheme clusters) for the
+  long-word bonus so `internal/timing` stays stdlib-only as Plan's architecture and T001.sh
+  require; equals the cluster count except for conjoining-jamo/Indic spacing-mark text
+  (Plan row 19 tension, no Plan edit). Resume `StartIndex` takes (start, startSet,
+  noResume, saved, haveSaved, n), a refinement of Plan's 4-argument sketch. README coverage
+  for phase 3: R8 T027; R9 T028; R10 T029; R26 T030; R27 effective wpm T031; R29 T032-T035;
+  R32 signal save T034 (leak test stays in phase 5); R11 `--start`/`--no-resume` override
+  T033, T034; R12 save failure exit 1 T034, T035; §5 control chars T027, T036; §5
+  data/privacy T032-T034; §5 timing accuracy T031; AC7 T028; AC8 T029; AC21 T030; AC22
+  (fake-clock wpm) T031; AC23 T032-T035; AC26 SIGTERM-saves part T034 (binary, < 1 s).
