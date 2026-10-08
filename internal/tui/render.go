@@ -28,6 +28,7 @@ type Cell struct {
 type Frame struct {
 	W, H  int
 	Size  int // size level actually drawn; 0 when nothing is drawn
+	Parts int // number of display steps of the word; 0 when nothing is drawn
 	Cells [][]Cell
 }
 
@@ -41,6 +42,7 @@ type Model struct {
 	Index, Total int // 0-based word index, word count
 	WPM          int
 	EffectiveWPM int // 0 = unknown
+	Part         int // 0-based display step of a long word
 }
 
 // TooSmallText is shown when the terminal is too small to draw a word.
@@ -81,6 +83,16 @@ func Render(m Model, w, h int) Frame {
 		}
 		return f
 	}
+	parts := Split(m.Word, s, w)
+	p := m.Part
+	if p > len(parts)-1 {
+		p = len(parts) - 1
+	}
+	if p < 0 {
+		p = 0
+	}
+	f.Parts = len(parts)
+	word := parts[p]
 	R := glyph.Rows(s)
 	y0 := h/2 - (R-1)/2
 	for _, ty := range []int{y0 - 1, y0 + R} {
@@ -89,15 +101,15 @@ func Render(m Model, w, h int) Frame {
 		}
 	}
 	if s >= 2 {
-		renderBlocks(&f, m.Word, s)
+		renderBlocks(&f, word, s)
 		return f
 	}
 	row := f.Cells[h/2]
-	cs := orp.Clusters(m.Word)
+	cs := orp.Clusters(word)
 	if len(cs) == 0 {
 		return f
 	}
-	fi := orp.Index(m.Word)
+	fi := orp.Index(word)
 	fc := FocusColumn(w)
 	// Cell width of each cluster; zero-width clusters take one cell, drawn after U+25CC.
 	texts := make([]string, len(cs))
