@@ -45,7 +45,7 @@ The supervisor prepends these, verbatim, to every worker brief:
 
 ## Task List
 
-Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-T036); next free ID: T037
+Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-T036); 4 = phase 4 (T037-T045); next free ID: T046
 
 | ID | Phase | Title | Depends-on | Model | Status | Notes |
 |----|-------|-------|------------|-------|--------|-------|
@@ -86,6 +86,15 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-
 | T034 | 3 | Resume wiring in cmd (TUI path, signals, raw/stdin never persisted) | T024, T033 | opus | todo | |
 | T035 | 3 | Resume on the GUI exit path (finish callback) | T034 | opus | todo | |
 | T036 | 3 | Phase 3 gate (core pipeline integration tests) | T026, T027, T028, T029, T031, T035 | sonnet | todo | also Phase 3 exit criterion |
+| T037 | 4 | Block-glyph font tables from X11 misc-fixed (internal/tui/glyph) | T001 | sonnet | todo | Plan v1.1 row 26: misc-fixed replaces font8x8 (not available offline) |
+| T038 | 4 | Block-glyph sizes 2-5 with size and rune fallback | T006, T037 | sonnet | todo | may set Size 1 in older level-1 tests (fix-up allowance in brief) |
+| T039 | 4 | Guide ticks and the too-small screen | T038 | sonnet | todo | |
+| T040 | 4 | Display widths (wide, combining, zero-width clusters) | T038 | sonnet | todo | |
+| T041 | 4 | Long-word splitting and the focus-column invariant | T039, T040 | sonnet | todo | |
+| T042 | 4 | Progress and help rows | T039 | sonnet | todo | |
+| T043 | 4 | Encode hardening (control stripping) and colour modes | T027, T041, T042 | opus | todo | |
+| T044 | 4 | Golden frames (sizes 1-5, ticks, toggles, fallbacks) | T041, T042, T043 | sonnet | todo | |
+| T045 | 4 | Phase 4 gate (frame performance, render invariants) | T044 | sonnet | todo | also Phase 4 exit criterion |
 
 Status values: `todo` · `done` · `blocked` · `superseded`. No pipe characters inside cells.
 
@@ -132,3 +141,31 @@ Run with the `loop-coding` skill (`/loop-coding Tasks.md`). The authoritative pr
   T033, T034; R12 save failure exit 1 T034, T035; §5 control chars T027, T036; §5
   data/privacy T032-T034; §5 timing accuracy T031; AC7 T028; AC8 T029; AC21 T030; AC22
   (fake-clock wpm) T031; AC23 T032-T035; AC26 SIGTERM-saves part T034 (binary, < 1 s).
+
+- 2026-10-08, batch 4 (Plan.md v1.1, phase 4): added T037-T045 as `todo` (1 opus, 8 sonnet).
+  Plan.md edited for a real gap (now v1.1): row 26's font8x8 master cannot be obtained
+  offline (downloads forbidden), so the glyphs come from the public-domain X11 misc-fixed
+  ISO 8859-1 fonts installed here (4x6, 6x10, 7x14, 9x18 = exact 2R-pixel heights, no
+  scaling, advance = box width) via a committed `//go:build ignore` generator whose output
+  T037.sh regenerates byte for byte; row 27 gained the vertical rule y0 = h/2 - (R-1)/2 and
+  a width condition in the size fallback (size 4 needs w >= 23, size 5 w >= 29) so R20
+  splitting always progresses; rows 39, D14, Phase 7 deliverables and the Risks line now
+  name `third_party/misc-fixed/LICENSE` (written in phase 7; T012.md's font8x8 remark is
+  stale but left untouched). Decisions: whole focus glyph box is `StyleFocus` (NO_COLOR
+  reverse video stays legible); zero-width clusters render as U+25CC + cluster; wide
+  `Cont` cells are `StylePlain`; progress row = bar `━`/`─` + `word i/N  E wpm` (E = `—`
+  until known); new API for phase 5: `EffectiveSize`, `Split`, `Model.Part`,
+  `Frame.Size`, `Frame.Parts` (timing of split steps stays with the phase 5 loop). Hand
+  numbers (size fallback table, split steps, glyph rows, progress rows, spot columns)
+  verified with scratch Go programs against uniseg v0.4.7 and the real PCF files. Phase 4
+  tests map: TestGlyphTables T037; TestSizeFallback, TestGlyphFallback T038; TestTicks,
+  TestTooSmall T039; TestWideAndCombining T040; TestSplitLongWord, TestSplitLinear,
+  TestFocusColumn T041; TestProgressHelpFocus, TestNoProgressFrame T042;
+  TestEncodeStripsControls (+FuzzRenderEncode), TestColorModes, TestNoColor T043; TestGolden
+  T044; TestRenderFast, BenchmarkRenderFrame, TestRenderInvariants + exit criterion T045.
+  README coverage for phase 4: R14 T043; R15 T037, T038, T044; R16 T038, T041; R17 T038,
+  T039 (live SIGWINCH in phase 5); R18 T040; R19 T039, T044; R20 T041 (per-step timing in
+  phase 5); R27 T042; R28 T042; R33 golden frames T044, focus column T041; §5 control
+  chars T043; §5 frame time T045; §5 legal font provenance T037 (notice in phase 7); AC11
+  T043; AC12 T038, T044; AC13 unit part T041; AC14 unit part T038, T039; AC15 T040; AC16
+  T039, T044; AC17 T041; AC22 frames T042, T044; AC28 frame part T045.
