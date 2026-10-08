@@ -1,6 +1,6 @@
 # Tasks: fastread
 
-_Generated from Plan.md v1. This file is the loop's persistent state (status and notes
+_Generated from Plan.md v1.1 (batches 1-3 from v1). This file is the loop's persistent state (status and notes
 only): update it in place, never regenerate it during a build. Briefs live in `tasks/<ID>.md`,
 verifications in `scripts/verify/<ID>.sh`._
 
@@ -45,7 +45,7 @@ The supervisor prepends these, verbatim, to every worker brief:
 
 ## Task List
 
-Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-T036); 4 = phase 4 (T037-T045); 5 = phase 5 (T046-T056); 6 = phase 6 (T057-T065); next free ID: T066
+Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-T036); 4 = phase 4 (T037-T045); 5 = phase 5 (T046-T056); 6 = phase 6 (T057-T065); 7 = phase 7 (T066-T069); next free ID: T070
 
 | ID | Phase | Title | Depends-on | Model | Status | Notes |
 |----|-------|-------|------------|-------|--------|-------|
@@ -115,6 +115,10 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-
 | T063 | 6 | E2E Xvfb harness and TestE2EGUIXvfb | T011, T062 | sonnet | todo | adds e2e helpers newXvfb, startGUI, readIndex |
 | T064 | 6 | E2E GUI error paths and the nogui binary | T011, T062 | sonnet | todo | |
 | T065 | 6 | Phase 6 gate (live GUI keys e2e, exit criterion) | T063, T064 | sonnet | todo | also Phase 6 exit criterion |
+| T066 | 7 | Third-party font licence texts (gofont, misc-fixed) | T008, T037 | opus | todo | opus per Consequential row 39 although Plan's routing example says haiku; content fixed byte for byte by the script |
+| T067 | 7 | E2E every input type and error case (TestE2EInputTypes) | T026, T051 | sonnet | todo | its CASE lines are the D16 report material |
+| T068 | 7 | Usage documentation (docs/usage.md) | T036, T056, T065, T066 | opus | todo | opus: Risk CLI contract and row 39; script cross-checks --help, HelpText, LevelSp, MinSp, go.mod |
+| T069 | 7 | Global Definition of Done gate (D1-D17) | T012, T045, T067, T068 | supervisor | todo | also Phase 7 exit criterion; D5 uses scripts/verify/_dodcheck.go |
 
 Status values: `todo` · `done` · `blocked` · `superseded`. No pipe characters inside cells.
 
@@ -265,3 +269,33 @@ Run with the `loop-coding` skill (`/loop-coding Tasks.md`). The authoritative pr
   GUI signals T062, T063; R33 GUI focus invariant T058; AC18 T057, T058; AC19 T063 (+
   pixels T061, T065); AC20 T062, T064; AC21 GUI part T060; AC25 T064, T065. Phase 7 keeps
   docs, licences (incl. `third_party/gofont/LICENSE`) and TestE2EInputTypes.
+
+- 2026-10-08, batch 7 (Plan.md v1.1, phase 7): added T066-T069 as `todo` (2 opus, 1 sonnet,
+  1 supervisor). No Plan.md edit. Tiers: T066 (licence texts) and T068 (docs) are opus
+  although the Plan's routing examples say haiku/sonnet: both touch Consequential row 39 and
+  T068 also the Risk "CLI contract" (prompt rule: never below opus); T066's content is fixed
+  byte for byte (`third_party/gofont/LICENSE` = `font/gofont/ttfs/README` of the pinned
+  `golang.org/x/image v0.36.0`, the Bigelow & Holmes licence; `third_party/misc-fixed/LICENSE`
+  = a fixed notice quoting the four PCF `COPYRIGHT` properties, checked live). Root `LICENSE`
+  stays T012 (complete; its font8x8 remark is stale). T067 `TestE2EInputTypes` logs one
+  `CASE name=<n> exit=<c> output=<q>` line per case (raw, stdin, txt, md, epub, fb2, pdf via
+  tmux; missing-file, empty-text, bad-flag, scanned-pdf, wrong-extension via exec), which D16
+  quotes. T068 makes docs accurate to the build by cross-checking against code: every
+  `--help` flag, `tui.HelpText` verbatim, every `go.mod` require module, `gui.LevelSp`/`MinSp`
+  values; docs must name no flag the binary lacks (negative). T069 (final DoD row, run by the
+  supervisor) runs D0 (all other rows done) and D1-D17 as labelled checks, D4 also on the
+  binary, D5 also via the new supervisor-owned `scripts/verify/_dodcheck.go` (AC7/AC8 numbers
+  on `orp`/`timing` directly; `//go:build ignore`, copied to a temporary `./.dodcheck.*` dir
+  and run with `go run`, so `./...` never sees it); D16 always reports Wayland "not run" (no
+  headless compositor; the user's session is off limits, slightly stricter than Plan D16's
+  "unless WAYLAND_DISPLAY is set") and re-runs the optional xwd pixel check; D17 = D1 passed
+  with HEAD unchanged and no uncommitted code. Whole-plan coverage check (prompt step 6, run
+  mechanically): index 9 columns on all 70 rows, every phase 0-7 has rows, all dependency IDs
+  exist, no forward references, no cycles (`tsort`), every row has `tasks/<ID>.md` and an
+  executable `scripts/verify/<ID>.sh` passing `bash -n` that sources `_lib.sh` and ends in
+  `finish`, no orphan files, every Plan-named test appears in a task file, every brief under
+  6000 characters; R1-R33 and AC1-AC32 all in Plan's coverage table and all but AC15 also in a
+  task file (AC15 = TestWideAndCombining, T040); every Risk item maps to an opus task (or the
+  supervisor rows T000/T069); opus scripts T010, T014, T015, T022, T023, T035 carry their
+  negative cases as `expect_ok "negative: …"` exact-exit checks rather than `expect_fail`
+  (accepted). Fixed: T036.md header now lists T026 like its row.
