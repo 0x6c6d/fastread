@@ -26,7 +26,9 @@ var (
 		f, ok := r.(*os.File)
 		return ok && f != nil && term.IsTerminal(int(f.Fd()))
 	}
-	exitProcess = os.Exit // only the GUI finish callback calls it
+	exitProcess   = os.Exit // only the GUI finish callback calls it
+	runTUI        = tui.Run
+	notifyContext = signal.NotifyContext
 )
 
 // errLine writes err as exactly one "fastread: <message>" line.
@@ -110,31 +112,27 @@ func runErr(args []string, stdin io.Reader, stdout, stderr io.Writer, getenv fun
 		return 0, nil
 	}
 
-	_, tokens, err := prepare(opts, stdin, stdinIsTTY(stdin))
+	doc, tokens, err := prepare(opts, stdin, stdinIsTTY(stdin))
 	if err != nil {
 		return exitCode(err), err
 	}
-	start := 0
-	if opts.startSet {
-		start = opts.start
-	}
-	// TODO(phase3): resume (load saved position unless --no-resume, save on quit, delete at end).
+	r := newResumer(doc, getenv, stderr)
 
 	p := state.NewPlayer(state.Config{
 		Tokens:       tokens,
-		Start:        start,
+		Start:        r.start(opts, len(tokens), stderr),
 		WPM:          opts.wpm,
 		Size:         opts.size,
 		ShowProgress: !opts.noProgress,
 		Clock:        state.SystemClock{},
 	})
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	ctx, stop := notifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
 	if opts.ui == "gui" {
 		finish := func(last int, err error) {
-			_ = last // TODO(phase3): resume
+			_ = last // GUI resume is wired by a later task
 			if err != nil {
 				errLine(stderr, err)
 				exitProcess(1)
@@ -152,8 +150,13 @@ func runErr(args []string, stdin io.Reader, stdout, stderr io.Writer, getenv fun
 	if err != nil {
 		return 1, err
 	}
-	if _, err := tui.Run(ctx, t, p, tui.Options{Getenv: getenv}); err != nil {
+	last, err := runTUI(ctx, t, p, tui.Options{Getenv: getenv})
+	ferr := r.finish(p, last)
+	if err != nil {
 		return 1, err
+	}
+	if ferr != nil {
+		return 1, ferr
 	}
 	return 0, nil
 }
