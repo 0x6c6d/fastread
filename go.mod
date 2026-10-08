@@ -6,6 +6,7 @@ toolchain go1.24.4
 
 require (
 	gioui.org v0.10.3
+	github.com/ledongthuc/pdf v0.0.0-20260907135840-6c8c28e0e8a0
 	github.com/rivo/uniseg v0.4.7
 	golang.org/x/image v0.36.0
 	golang.org/x/net v0.50.0
