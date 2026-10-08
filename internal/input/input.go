@@ -33,9 +33,8 @@ type Source struct {
 }
 
 // Load returns the document for src. KindRaw: ParseText of the text. KindStdin: reads all of
-// stdin, then ParseText. KindFile: not implemented in the walking skeleton, returns an error
-// wrapping ErrUnsupported ("file input not implemented yet"). Read errors are wrapped with %w.
-// Stdin is capped at MaxInputBytes (ErrTooLarge).
+// stdin, then ParseText. KindFile: LoadFile of the path. Read errors are wrapped with %w.
+// Stdin and files are capped at MaxInputBytes (ErrTooLarge).
 func Load(src Source, stdin io.Reader) (Document, error) {
 	return load(src, stdin, DefaultLimits())
 }
@@ -55,7 +54,7 @@ func load(src Source, stdin io.Reader, lim Limits) (Document, error) {
 		}
 		return Document{Paragraphs: ParseText(b)}, nil
 	case KindFile:
-		return Document{}, fmt.Errorf("%s: file input not implemented yet: %w", src.Path, ErrUnsupported)
+		return loadFile(src.Path, lim)
 	default:
 		return Document{}, fmt.Errorf("unknown source kind %d: %w", src.Kind, ErrUnsupported)
 	}

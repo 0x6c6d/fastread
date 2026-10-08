@@ -91,7 +91,7 @@ func TestLoadRawStdin(t *testing.T) {
 		{"raw", Source{Kind: KindRaw, Text: "a b\n\nc"}, nil, []string{"a b", "c"}, false, nil},
 		{"stdin", Source{Kind: KindStdin}, strings.NewReader("x y"), []string{"x y"}, false, nil},
 		{"stdin read error", Source{Kind: KindStdin}, errReader{}, nil, true, nil},
-		{"file not implemented", Source{Kind: KindFile, Path: "x.txt"}, nil, nil, true, ErrUnsupported},
+		{"file missing", Source{Kind: KindFile, Path: "does-not-exist.txt"}, nil, nil, true, ErrNotFound},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
