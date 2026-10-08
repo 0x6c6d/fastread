@@ -91,7 +91,7 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-
 | T039 | 4 | Guide ticks and the too-small screen | T038 | sonnet | done | render.go ticks + TooSmallText; ticks_test.go (TestTicks, TestTooSmall, TestTicksSpot) |
 | T040 | 4 | Display widths (wide, combining, zero-width clusters) | T038 | sonnet | done | render.go level-1 width placement (U+25CC for zero-width); widths_test.go |
 | T041 | 4 | Long-word splitting and the focus-column invariant | T039, T040 | sonnet | done | layout.go Split (linear), render.go Part/Parts, split_test.go, race const files |
-| T042 | 4 | Progress and help rows | T039 | sonnet | todo | |
+| T042 | 4 | Progress and help rows | T039 | sonnet | done | render.go HelpText + addRows (help row 0, progress row h-1); rows_test.go |
 | T043 | 4 | Encode hardening (control stripping) and colour modes | T027, T041, T042 | opus | todo | |
 | T044 | 4 | Golden frames (sizes 1-5, ticks, toggles, fallbacks) | T041, T042, T043 | sonnet | todo | |
 | T045 | 4 | Phase 4 gate (frame performance, render invariants) | T044 | sonnet | todo | also Phase 4 exit criterion |

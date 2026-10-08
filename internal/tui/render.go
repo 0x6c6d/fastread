@@ -2,6 +2,9 @@
 package tui
 
 import (
+	"fmt"
+	"strconv"
+
 	"github.com/0x6c6d/fastread/internal/orp"
 	"github.com/0x6c6d/fastread/internal/tui/glyph"
 	"github.com/rivo/uniseg"
@@ -53,6 +56,66 @@ func FocusColumn(w int) int { return w / 2 }
 
 // Render draws m into a w x h frame. It never panics; cells outside the frame are clipped.
 func Render(m Model, w, h int) Frame {
+	f := renderWord(m, w, h)
+	if f.Size >= 1 {
+		addRows(&f, m)
+	}
+	return f
+}
+
+// HelpText is the help row shown with ShowHelp.
+const HelpText = "space pause  ↑↓ wpm  [ ] size  ←→ word  home restart  p progress  ? help  q quit"
+
+// addRows draws the help row (row 0) and the progress row (row h-1).
+func addRows(f *Frame, m Model) {
+	put := func(y, x int, r rune) {
+		if x >= 0 && x < f.W {
+			f.Cells[y][x] = Cell{Text: string(r)}
+		}
+	}
+	if m.ShowHelp {
+		for i, r := range []rune(HelpText) {
+			put(0, i, r)
+		}
+	}
+	if !m.ShowProgress {
+		return
+	}
+	y := f.H - 1
+	e := "\u2014"
+	if m.EffectiveWPM > 0 {
+		e = strconv.Itoa(m.EffectiveWPM)
+	}
+	text := []rune(fmt.Sprintf("word %d/%d  %s wpm", m.Index+1, m.Total, e))
+	tw := len(text)
+	start := 0
+	if f.W >= tw+2 {
+		bw := f.W - tw - 1
+		filled := 0
+		if m.Total > 0 {
+			filled = (m.Index + 1) * bw / m.Total
+		}
+		if filled < 0 {
+			filled = 0
+		}
+		if filled > bw {
+			filled = bw
+		}
+		for x := 0; x < bw; x++ {
+			if x < filled {
+				put(y, x, '\u2501')
+			} else {
+				put(y, x, '\u2500')
+			}
+		}
+		start = bw + 1
+	}
+	for i, r := range text {
+		put(y, start+i, r)
+	}
+}
+
+func renderWord(m Model, w, h int) Frame {
 	if w < 0 {
 		w = 0
 	}
