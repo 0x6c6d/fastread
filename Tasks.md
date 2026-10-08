@@ -49,7 +49,7 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-
 
 | ID | Phase | Title | Depends-on | Model | Status | Notes |
 |----|-------|-------|------------|-------|--------|-------|
-| T000 | 0 | Preflight | — | supervisor | todo | at generation all env checks passed (x11-xcb now present); only the clean-tree check fails until batch 1 is committed |
+| T000 | 0 | Preflight | — | supervisor | done | all 7 preflight checks pass |
 | T001 | 1 | Go module and timing skeleton | T000 | opus | todo | |
 | T002 | 1 | Tokenizer skeleton | T001 | haiku | todo | |
 | T003 | 1 | ORP focus index skeleton (uniseg pin) | T001 | opus | todo | |
