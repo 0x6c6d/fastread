@@ -3,6 +3,7 @@ package state
 
 import (
 	"math"
+	"strings"
 	"time"
 
 	"github.com/0x6c6d/fastread/internal/timing"
@@ -53,6 +54,10 @@ type Player struct {
 	remaining    time.Duration // time left on the current word while paused
 	clock        Clock
 
+	parts     []string      // display steps of the current word; nil = one step
+	part      int           // current step
+	stepDelay time.Duration // delay the current step was scheduled with
+
 	started   bool
 	completed int           // words whose deadline passed inside Tick
 	unpaused  time.Duration // closed playing segments
@@ -86,13 +91,94 @@ func NewPlayer(cfg Config) *Player {
 	return p
 }
 
-// delay returns how long the current word is shown.
+// delay returns how long the current word step is shown.
 func (p *Player) delay() time.Duration {
 	if len(p.tokens) == 0 {
 		return 0
 	}
+	return p.stepDelayOf(p.parts, p.part)
+}
+
+// stepDelayOf returns the delay of step i of parts (nil means the whole word).
+func (p *Player) stepDelayOf(parts []string, i int) time.Duration {
 	t := p.tokens[p.index]
-	return timing.DelayPara(t.Text, p.wpm, t.ParaEnd)
+	if len(parts) == 0 {
+		return timing.DelayPara(t.Text, p.wpm, t.ParaEnd)
+	}
+	if i < len(parts)-1 {
+		return timing.Delay(strings.TrimSuffix(parts[i], "-"), p.wpm)
+	}
+	return timing.DelayPara(parts[i], p.wpm, t.ParaEnd)
+}
+
+// resetSteps makes the current word a single step and records its delay.
+func (p *Player) resetSteps() {
+	p.parts = nil
+	p.part = 0
+	p.stepDelay = p.delay()
+}
+
+// SetParts sets the display steps of the current word, as computed by the UI (R20).
+// nil, an empty slice or a single element means the word is one step (the default after
+// every word change). Step i < last lasts timing.Delay(strings.TrimSuffix(parts[i], "-"), wpm);
+// the last step lasts timing.DelayPara(parts[last], wpm, Token().ParaEnd). Parts equal to
+// the current ones (nil is equivalent to []string{Token().Text}) change nothing. Otherwise the
+// current step index is clamped to the new count and the time already spent in the current
+// step is kept. No-op after Finished.
+func (p *Player) SetParts(parts []string) {
+	if p.finished || len(p.tokens) == 0 {
+		return
+	}
+	text := p.tokens[p.index].Text
+	eff := func(ps []string) []string {
+		if len(ps) == 0 {
+			return []string{text}
+		}
+		return ps
+	}
+	cur, nw := eff(p.parts), eff(parts)
+	if len(cur) == len(nw) {
+		same := true
+		for i := range cur {
+			if cur[i] != nw[i] {
+				same = false
+				break
+			}
+		}
+		if same {
+			return
+		}
+	}
+	if len(parts) <= 1 && len(parts) == 1 && parts[0] == text {
+		parts = nil
+	}
+	if len(parts) == 0 {
+		parts = nil
+	}
+	n := len(nw)
+	part := p.part
+	if part > n-1 {
+		part = n - 1
+	}
+	old := p.stepDelay
+	nd := p.stepDelayOf(parts, part)
+	if p.playing {
+		p.deadline = p.deadline.Add(-old + nd)
+	} else {
+		p.remaining = max(0, nd-(old-p.remaining))
+	}
+	p.parts, p.part, p.stepDelay = parts, part, nd
+}
+
+// Part returns the 0-based display step of the current word.
+func (p *Player) Part() int { return p.part }
+
+// Parts returns the number of display steps of the current word (at least 1).
+func (p *Player) Parts() int {
+	if len(p.parts) == 0 {
+		return 1
+	}
+	return len(p.parts)
 }
 
 // Start sets the deadline to now plus the delay of the current word.
@@ -101,7 +187,8 @@ func (p *Player) Start() {
 	p.completed = 0
 	p.unpaused = 0
 	p.segStart = p.clock.Now()
-	p.deadline = p.clock.Now().Add(p.delay())
+	p.stepDelay = p.delay()
+	p.deadline = p.clock.Now().Add(p.stepDelay)
 }
 
 // Tick advances past every word whose deadline has passed. It reports whether the
@@ -112,6 +199,12 @@ func (p *Player) Tick() (finished bool) {
 	}
 	now := p.clock.Now()
 	for p.playing && !now.Before(p.deadline) {
+		if p.part < p.Parts()-1 {
+			p.part++
+			p.stepDelay = p.delay()
+			p.deadline = p.deadline.Add(p.stepDelay)
+			continue
+		}
 		p.completed++
 		if p.index >= len(p.tokens)-1 {
 			p.finished = true
@@ -120,7 +213,8 @@ func (p *Player) Tick() (finished bool) {
 			return true
 		}
 		p.index++
-		p.deadline = p.deadline.Add(p.delay())
+		p.resetSteps()
+		p.deadline = p.deadline.Add(p.stepDelay)
 	}
 	return false
 }
@@ -181,10 +275,11 @@ func (p *Player) jump(i int, now time.Time) {
 		return
 	}
 	p.index = i
+	p.resetSteps()
 	if p.playing {
-		p.deadline = now.Add(p.delay())
+		p.deadline = now.Add(p.stepDelay)
 	} else {
-		p.remaining = p.delay()
+		p.remaining = p.stepDelay
 	}
 }
 
