@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"unicode/utf8"
 )
@@ -31,30 +30,6 @@ type Source struct {
 	Kind Kind
 	Text string // KindRaw: the argument
 	Path string // KindFile: the argument as given
-}
-
-// Select applies R1. hasArg reports whether a positional argument was given.
-//   - hasArg and os.Stat(arg) finds a regular file  -> KindFile
-//   - hasArg and arg is an existing directory       -> error wrapping ErrUnsupported
-//   - hasArg otherwise                              -> KindRaw (path heuristic added later)
-//   - !hasArg and stdinIsTTY                        -> ErrNoInput (caller exits 2 with usage)
-//   - !hasArg and !stdinIsTTY                       -> KindStdin
-func Select(arg string, hasArg, stdinIsTTY bool) (Source, error) {
-	if !hasArg {
-		if stdinIsTTY {
-			return Source{}, ErrNoInput
-		}
-		return Source{Kind: KindStdin}, nil
-	}
-	if fi, err := os.Stat(arg); err == nil {
-		switch {
-		case fi.Mode().IsRegular():
-			return Source{Kind: KindFile, Path: arg}, nil
-		case fi.IsDir():
-			return Source{}, fmt.Errorf("%s: is a directory: %w", arg, ErrUnsupported)
-		}
-	}
-	return Source{Kind: KindRaw, Text: arg}, nil
 }
 
 // Load returns the document for src. KindRaw: ParseText of the text. KindStdin: reads all of
