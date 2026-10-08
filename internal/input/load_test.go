@@ -62,7 +62,7 @@ func TestLoadFile(t *testing.T) {
 			return loadFile(five, Limits{MaxBytes: 4, MaxEntries: 1, MaxDepth: 1})
 		}, ErrTooLarge, nil, ""},
 		{"empty", func() (Document, error) { return LoadFile(empty) }, nil, nil, ""},
-		{"markdown stub", func() (Document, error) { return LoadFile(md) }, nil, []string{"# Title", "body"}, ""},
+		{"markdown", func() (Document, error) { return LoadFile(md) }, nil, []string{"Title", "body"}, ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

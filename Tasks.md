@@ -65,7 +65,7 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-
 | T013 | 2 | Hardened input helpers (size caps, zip, XML, recover) | T005 | opus | done | internal/input/safe.go + safe_test.go; Load delegates to load(lim) |
 | T014 | 2 | Source selection with the path-like rule (A3) | T005, T010 | opus | done | internal/input/select.go + select_test.go; Select moved out of input.go |
 | T015 | 2 | File type detection, file loading and loader stubs | T010, T013 | opus | done | detect.go, load.go, loader stubs, fixture_test.go + tests; TestLoadRawStdin stub case updated to ErrNotFound (superseded behaviour) |
-| T016 | 2 | Markdown stripper | T015 | sonnet | todo | |
+| T016 | 2 | Markdown stripper | T015 | sonnet | done | markdown.go stripper, markdown_test.go, testdata/sample.md; load_test markdown stub case updated |
 | T017 | 2 | XHTML to paragraphs (x/net/html pin) | T013 | opus | todo | |
 | T018 | 2 | EPUB loader (container, OPF spine, zip-entry resolution) | T015, T017 | opus | todo | |
 | T019 | 2 | EPUB DRM detection (encryption.xml) | T018 | opus | todo | |
