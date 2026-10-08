@@ -79,7 +79,7 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-
 | T027 | 3 | Full tokenizer (paragraph breaks, Sanitize) | T002 | opus | done | tokenize.go: Sanitize + single-pass Tokenize; tests + FuzzTokenize |
 | T028 | 3 | Unicode ORP table tests (TestPosition, TestIndex) | T003 | sonnet | done | internal/orp/orp_table_test.go (37 rows); orp.go unchanged |
 | T029 | 3 | Timing multipliers (TestDelay, TestDelayPara) | T001 | sonnet | done | timing/delay.go multipliers; TestDelay, TestDelayPara |
-| T030 | 3 | Player live keys (R26) with pause and jump timing | T004 | sonnet | todo | rewrites T004's TestPlayerQuit (keys now change state) |
+| T030 | 3 | Player live keys (R26) with pause and jump timing | T004 | sonnet | done | player.go R26 Apply + remaining; TestPlayerKeys; TestPlayerQuit rewritten as planned |
 | T031 | 3 | Player effective wpm and drift-free schedule | T030 | sonnet | todo | |
 | T032 | 3 | Resume store: directory, atomic save, delete, modes | T004 | opus | todo | |
 | T033 | 3 | Resume store: load, corrupt entries, start index | T032 | opus | todo | |

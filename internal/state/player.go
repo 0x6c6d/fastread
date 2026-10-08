@@ -49,6 +49,7 @@ type Player struct {
 	playing      bool
 	finished     bool
 	deadline     time.Time
+	remaining    time.Duration // time left on the current word while paused
 	clock        Clock
 }
 
@@ -115,12 +116,80 @@ func (p *Player) Apply(a Action) (quit bool) {
 	if a == ActQuit {
 		return true
 	}
-	// TODO(phase3): R26 keys
+	if p.finished || len(p.tokens) == 0 {
+		return false
+	}
+	now := p.clock.Now()
+	switch a {
+	case ActTogglePause:
+		if p.playing {
+			p.remaining = p.deadline.Sub(now)
+			if p.remaining < 0 {
+				p.remaining = 0
+			}
+			p.playing = false
+		} else {
+			p.deadline = now.Add(p.remaining)
+			p.playing = true
+		}
+	case ActWPMUp:
+		p.wpm = clampInt(p.wpm+25, timing.MinWPM, timing.MaxWPM)
+	case ActWPMDown:
+		p.wpm = clampInt(p.wpm-25, timing.MinWPM, timing.MaxWPM)
+	case ActSizeUp:
+		p.size = clampInt(p.size+1, 1, 5)
+	case ActSizeDown:
+		p.size = clampInt(p.size-1, 1, 5)
+	case ActNext, ActPrev:
+		step := 1
+		if p.playing {
+			step = 10
+		}
+		if a == ActPrev {
+			step = -step
+		}
+		p.jump(clampInt(p.index+step, 0, len(p.tokens)-1), now)
+	case ActHome:
+		p.jump(0, now)
+	case ActToggleProgress:
+		p.showProgress = !p.showProgress
+	case ActToggleHelp:
+		p.showHelp = !p.showHelp
+	}
 	return false
 }
 
-// Deadline returns when the current word should be replaced.
-func (p *Player) Deadline() time.Time { return p.deadline }
+// jump moves to index i and restarts the word timer if the index changed.
+func (p *Player) jump(i int, now time.Time) {
+	if i == p.index {
+		return
+	}
+	p.index = i
+	if p.playing {
+		p.deadline = now.Add(p.delay())
+	} else {
+		p.remaining = p.delay()
+	}
+}
+
+func clampInt(v, lo, hi int) int {
+	if v < lo {
+		return lo
+	}
+	if v > hi {
+		return hi
+	}
+	return v
+}
+
+// Deadline returns when the current word should be replaced. While paused it
+// returns the deadline that resuming at the current Now() would give (now + remaining).
+func (p *Player) Deadline() time.Time {
+	if !p.playing {
+		return p.clock.Now().Add(p.remaining)
+	}
+	return p.deadline
+}
 
 // Index returns the index of the word on screen.
 func (p *Player) Index() int { return p.index }
