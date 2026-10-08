@@ -1,6 +1,7 @@
 package timing
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -31,6 +32,58 @@ func TestDelayBase(t *testing.T) {
 	for _, w := range []string{"hello", "a", "reading"} {
 		if got, want := DelayPara(w, 300, false), Delay(w, 300); got != want {
 			t.Errorf("DelayPara(%q, 300, false) = %v, want Delay = %v", w, got, want)
+		}
+	}
+}
+
+type delayRow struct {
+	word string
+	wpm  int
+	ms   int
+}
+
+var delayRows = []delayRow{
+	{"word", 300, 200}, {"word.", 300, 400}, {"word,", 300, 300}, {"word;", 300, 300},
+	{"word:", 300, 300}, {"word!", 300, 400}, {"word?", 300, 400}, {"word…", 300, 400},
+	{"etc...", 300, 400}, {"?!", 300, 400}, {"\"word.\"", 300, 400}, {"(word),", 300, 300},
+	{"word?)", 300, 400}, {"word»", 300, 200}, {"’word’", 300, 200}, {"don't", 300, 200},
+	{"—", 300, 200}, {"--", 300, 200}, {"...", 300, 400}, {"naïve.", 300, 400},
+	{"héllo", 300, 200}, {"2026.", 300, 400}, {"abcdefgh", 300, 200}, {"wonderful", 300, 210},
+	{"abcdefghijkl", 300, 240}, {strings.Repeat("a", 18), 300, 300},
+	{strings.Repeat("a", 30), 300, 300}, {"extraordinary.", 300, 500},
+	{"abcdefghijkl,", 300, 360}, {"wonderful", 600, 105}, {"word", 1000, 60},
+	{"word.", 1000, 120}, {"word.", 450, 267}, {"word,", 450, 200},
+	{"abcdefghijk", 450, 153}, {"word.", 0, 2400}, {"word.", 99999, 80},
+}
+
+func TestDelay(t *testing.T) {
+	for _, r := range delayRows {
+		want := time.Duration(r.ms) * time.Millisecond
+		if got := Delay(r.word, r.wpm); got != want {
+			t.Errorf("Delay(%q, %d) = %v, want %v", r.word, r.wpm, got, want)
+		}
+		if got := DelayPara(r.word, r.wpm, false); got != want {
+			t.Errorf("DelayPara(%q, %d, false) = %v, want %v", r.word, r.wpm, got, want)
+		}
+		if want <= 0 {
+			t.Errorf("non-positive want for %q", r.word)
+		}
+		if p := DelayPara(r.word, r.wpm, true); p < want {
+			t.Errorf("DelayPara(%q, %d, true) = %v < %v", r.word, r.wpm, p, want)
+		}
+	}
+}
+
+func TestDelayPara(t *testing.T) {
+	tests := []delayRow{
+		{"word", 300, 500}, {"word.", 300, 500}, {"word,", 300, 500}, {"word!", 300, 500},
+		{"wonderful", 300, 525}, {strings.Repeat("a", 30), 300, 750},
+		{"extraordinary.", 300, 625}, {"—", 300, 500}, {"word.", 450, 333},
+	}
+	for _, r := range tests {
+		want := time.Duration(r.ms) * time.Millisecond
+		if got := DelayPara(r.word, r.wpm, true); got != want {
+			t.Errorf("DelayPara(%q, %d, true) = %v, want %v", r.word, r.wpm, got, want)
 		}
 	}
 }
