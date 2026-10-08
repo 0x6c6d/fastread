@@ -52,7 +52,7 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-
 | T000 | 0 | Preflight | — | supervisor | done | all 7 preflight checks pass |
 | T001 | 1 | Go module and timing skeleton | T000 | opus | done | go.mod (go 1.24.1, toolchain go1.24.4), internal/timing constants, Delay/DelayPara base |
 | T002 | 1 | Tokenizer skeleton | T001 | haiku | done | internal/tokenize: Token, Tokenize skeleton + test |
-| T003 | 1 | ORP focus index skeleton (uniseg pin) | T001 | opus | todo | |
+| T003 | 1 | ORP focus index skeleton (uniseg pin) | T001 | opus | done | internal/orp (Clusters, Position, Index via uniseg v0.4.7), go.mod/go.sum |
 | T004 | 1 | Playback model skeleton (state.Player) | T001, T002 | sonnet | todo | |
 | T005 | 1 | Input skeleton (selection, raw, stdin) | T001 | opus | todo | |
 | T006 | 1 | TUI frame renderer and ANSI encoder skeleton | T003 | sonnet | todo | |
