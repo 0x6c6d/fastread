@@ -86,7 +86,7 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-
 | T034 | 3 | Resume wiring in cmd (TUI path, signals, raw/stdin never persisted) | T024, T033 | opus | done | resume.go, run.go (runTUI, notifyContext seams), resume_test.go; GUI TODO comment reworded (see Improvements) |
 | T035 | 3 | Resume on the GUI exit path (finish callback) | T034 | opus | done | run.go runGUI seam + once-guarded finish saving resume; resume_gui_test.go |
 | T036 | 3 | Phase 3 gate (core pipeline integration tests) | T026, T027, T028, T029, T031, T035 | sonnet | done | core_test.go (TestPrepareSanitized, TestCorePipeline); Phase 3 exit criterion passes |
-| T037 | 4 | Block-glyph font tables from X11 misc-fixed (internal/tui/glyph) | T001 | sonnet | todo | Plan v1.1 row 26: misc-fixed replaces font8x8 (not available offline) |
+| T037 | 4 | Block-glyph font tables from X11 misc-fixed (internal/tui/glyph) | T001 | sonnet | done | internal/tui/glyph: gen.go, data.go (byte-identical regen), glyph.go, glyph_test.go; Plan v1.1 row 26: misc-fixed replaces font8x8 (not available offline) |
 | T038 | 4 | Block-glyph sizes 2-5 with size and rune fallback | T006, T037 | sonnet | todo | may set Size 1 in older level-1 tests (fix-up allowance in brief) |
 | T039 | 4 | Guide ticks and the too-small screen | T038 | sonnet | todo | |
 | T040 | 4 | Display widths (wide, combining, zero-width clusters) | T038 | sonnet | todo | |

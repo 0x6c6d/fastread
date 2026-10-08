@@ -1,0 +1,244 @@
+//go:build ignore
+
+// gen.go reads the X11 misc-fixed PCF fonts and writes data.go.
+package main
+
+import (
+	"bytes"
+	"compress/gzip"
+	"encoding/binary"
+	"flag"
+	"fmt"
+	"go/format"
+	"io"
+	"os"
+	"path/filepath"
+)
+
+type fontSpec struct {
+	size int
+	file string
+	w, h int // font cell
+	outW int // padded width
+}
+
+var specs = []fontSpec{
+	{2, "4x6-ISO8859-1.pcf.gz", 4, 6, 4},
+	{3, "6x10-ISO8859-1.pcf.gz", 6, 10, 6},
+	{4, "7x14-ISO8859-1.pcf.gz", 7, 14, 8},
+	{5, "9x18-ISO8859-1.pcf.gz", 9, 18, 10},
+}
+
+type metric struct{ lb, rb, width, asc, desc int }
+
+type table struct{ format, off, size int }
+
+func fail(format string, a ...any) {
+	fmt.Fprintf(os.Stderr, "gen.go: "+format+"\n", a...)
+	os.Exit(1)
+}
+
+type reader struct {
+	b  []byte
+	bo binary.ByteOrder
+}
+
+func (r *reader) i32(off int) int { return int(int32(r.bo.Uint32(r.b[off:]))) }
+func (r *reader) i16(off int) int { return int(int16(r.bo.Uint16(r.b[off:]))) }
+func (r *reader) u16(off int) int { return int(r.bo.Uint16(r.b[off:])) }
+
+func runes() []rune {
+	var rs []rune
+	for c := rune(0x20); c <= 0x7E; c++ {
+		rs = append(rs, c)
+	}
+	for c := rune(0xA0); c <= 0xFF; c++ {
+		rs = append(rs, c)
+	}
+	return rs
+}
+
+// parse returns, per required rune, the pixel rows of its font cell (bit w-1-x = column x).
+func parse(path string, sp fontSpec) [][]uint16 {
+	f, err := os.Open(path)
+	if err != nil {
+		fail("%v", err)
+	}
+	defer f.Close()
+	zr, err := gzip.NewReader(f)
+	if err != nil {
+		fail("%s: %v", path, err)
+	}
+	data, err := io.ReadAll(zr)
+	if err != nil {
+		fail("%s: %v", path, err)
+	}
+	if len(data) < 8 || string(data[:4]) != "\x01fcp" {
+		fail("%s: not a PCF file", path)
+	}
+	le := binary.LittleEndian
+	n := int(int32(le.Uint32(data[4:])))
+	tables := map[int]table{}
+	for i := 0; i < n; i++ {
+		o := 8 + 16*i
+		if o+16 > len(data) {
+			fail("%s: truncated table of contents", path)
+		}
+		t := table{int(int32(le.Uint32(data[o+4:]))), int(int32(le.Uint32(data[o+12:]))), int(int32(le.Uint32(data[o+8:])))}
+		if t.off < 0 || t.off >= len(data) {
+			fail("%s: table out of range", path)
+		}
+		tables[int(int32(le.Uint32(data[o:])))] = t
+	}
+	rd := func(t table) *reader {
+		var bo binary.ByteOrder = binary.LittleEndian
+		if t.format&0x4 != 0 {
+			bo = binary.BigEndian
+		}
+		return &reader{data, bo}
+	}
+	need := func(typ int, name string) table {
+		t, ok := tables[typ]
+		if !ok {
+			fail("%s: missing table %s", path, name)
+		}
+		return t
+	}
+
+	// accelerators: font ascent and descent
+	at, ok := tables[1<<8]
+	if !ok {
+		at = need(1<<1, "ACCELERATORS")
+	}
+	ar := rd(at)
+	fa, fd := ar.i32(at.off+4+8), ar.i32(at.off+4+12)
+	if sp.w <= 0 || fa+fd != sp.h {
+		fail("%s: cell height %d, want %d", path, fa+fd, sp.h)
+	}
+
+	// metrics
+	mt := need(1<<2, "METRICS")
+	mr := rd(mt)
+	var ms []metric
+	if mt.format&0x100 != 0 {
+		cnt := mr.i16(mt.off + 4)
+		for i := 0; i < cnt; i++ {
+			p := mt.off + 6 + 5*i
+			g := func(k int) int { return int(data[p+k]) - 0x80 }
+			ms = append(ms, metric{g(0), g(1), g(2), g(3), g(4)})
+		}
+	} else {
+		cnt := mr.i32(mt.off + 4)
+		for i := 0; i < cnt; i++ {
+			p := mt.off + 8 + 12*i
+			ms = append(ms, metric{mr.i16(p), mr.i16(p + 2), mr.i16(p + 4), mr.i16(p + 6), mr.i16(p + 8)})
+		}
+	}
+
+	// bitmaps
+	bt := need(1<<3, "BITMAPS")
+	br := rd(bt)
+	bcnt := br.i32(bt.off + 4)
+	if bcnt != len(ms) {
+		fail("%s: %d bitmaps but %d metrics", path, bcnt, len(ms))
+	}
+	dataStart := bt.off + 8 + 4*bcnt + 16
+	pad := 1 << (bt.format & 3)
+	msbFirst := bt.format&0x8 != 0
+
+	// encodings
+	et := need(1<<5, "BDF_ENCODINGS")
+	er := rd(et)
+	minB2, maxB2 := er.i16(et.off+4), er.i16(et.off+6)
+	minB1, maxB1 := er.i16(et.off+8), er.i16(et.off+10)
+	cols := maxB2 - minB2 + 1
+	idx := func(r rune) int {
+		b1, b2 := int(r>>8), int(r&0xFF)
+		if b1 < minB1 || b1 > maxB1 || b2 < minB2 || b2 > maxB2 {
+			return -1
+		}
+		p := et.off + 14 + 2*((b1-minB1)*cols+(b2-minB2))
+		g := er.u16(p)
+		if g == 0xFFFF {
+			return -1
+		}
+		return g
+	}
+
+	var out [][]uint16
+	for _, r := range runes() {
+		g := idx(r)
+		if g < 0 || g >= len(ms) {
+			fail("%s: rune U+%04X absent", path, r)
+		}
+		m := ms[g]
+		bw, bh := m.rb-m.lb, m.asc+m.desc
+		if bw < 0 || bh < 0 {
+			fail("%s: bad metrics for U+%04X", path, r)
+		}
+		stride := (bw + 7) / 8
+		stride = (stride + pad - 1) / pad * pad
+		off := dataStart + br.i32(bt.off+8+4*g)
+		rows := make([]uint16, sp.h)
+		for y := 0; y < bh; y++ {
+			cy := fa - m.asc + y
+			if cy < 0 || cy >= sp.h {
+				continue
+			}
+			for x := 0; x < bw; x++ {
+				cx := m.lb + x
+				if cx < 0 || cx >= sp.w {
+					continue
+				}
+				by := data[off+y*stride+x/8]
+				var on bool
+				if msbFirst {
+					on = by&(0x80>>(x%8)) != 0
+				} else {
+					on = by&(1<<(x%8)) != 0
+				}
+				if on {
+					rows[cy] |= 1 << (sp.outW - 1 - cx)
+				}
+			}
+		}
+		out = append(out, rows)
+	}
+	return out
+}
+
+func main() {
+	dir := flag.String("fontdir", "/usr/share/fonts/X11/misc", "directory with the PCF fonts")
+	o := flag.String("o", "data.go", "output file")
+	flag.Parse()
+
+	var b bytes.Buffer
+	b.WriteString("// Code generated by gen.go from the public-domain X11 misc-fixed fonts; DO NOT EDIT.\n\n")
+	b.WriteString("// Sources: 4x6-ISO8859-1.pcf.gz (size 2), 6x10-ISO8859-1.pcf.gz (size 3),\n")
+	b.WriteString("// 7x14-ISO8859-1.pcf.gz (size 4) and 9x18-ISO8859-1.pcf.gz (size 5).\n")
+	b.WriteString("// Public domain font.  Share and enjoy.\n\n")
+	b.WriteString("package glyph\n\n")
+	b.WriteString("// Each table holds, per rune slot (0x20-0x7E, then 0xA0-0xFF), one uint16 per pixel row;\n")
+	b.WriteString("// bit Width-1-x is column x.\n")
+	for _, sp := range specs {
+		glyphs := parse(filepath.Join(*dir, sp.file), sp)
+		fmt.Fprintf(&b, "var font%d = []uint16{\n", sp.size)
+		for _, rows := range glyphs {
+			for i, v := range rows {
+				if i > 0 {
+					b.WriteByte(' ')
+				}
+				fmt.Fprintf(&b, "0x%04x,", v)
+			}
+			b.WriteByte('\n')
+		}
+		b.WriteString("}\n\n")
+	}
+	src, err := format.Source(b.Bytes())
+	if err != nil {
+		fail("format: %v", err)
+	}
+	if err := os.WriteFile(*o, src, 0o644); err != nil {
+		fail("%v", err)
+	}
+}
