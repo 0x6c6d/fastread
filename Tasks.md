@@ -81,7 +81,7 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-
 | T029 | 3 | Timing multipliers (TestDelay, TestDelayPara) | T001 | sonnet | done | timing/delay.go multipliers; TestDelay, TestDelayPara |
 | T030 | 3 | Player live keys (R26) with pause and jump timing | T004 | sonnet | done | player.go R26 Apply + remaining; TestPlayerKeys; TestPlayerQuit rewritten as planned |
 | T031 | 3 | Player effective wpm and drift-free schedule | T030 | sonnet | done | player.go EffectiveWPM; TestEffectiveWPM, TestScheduleNoDrift |
-| T032 | 3 | Resume store: directory, atomic save, delete, modes | T004 | opus | todo | |
+| T032 | 3 | Resume store: directory, atomic save, delete, modes | T004 | opus | done | state/store.go write half (Dir, Store, Save, Delete) + store_test.go |
 | T033 | 3 | Resume store: load, corrupt entries, start index | T032 | opus | todo | |
 | T034 | 3 | Resume wiring in cmd (TUI path, signals, raw/stdin never persisted) | T024, T033 | opus | todo | |
 | T035 | 3 | Resume on the GUI exit path (finish callback) | T034 | opus | todo | |
