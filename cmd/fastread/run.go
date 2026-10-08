@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 
 	"golang.org/x/term"
@@ -28,6 +29,7 @@ var (
 	}
 	exitProcess   = os.Exit // only the GUI finish callback calls it
 	runTUI        = tui.Run
+	runGUI        = gui.Run
 	notifyContext = signal.NotifyContext
 )
 
@@ -131,19 +133,28 @@ func runErr(args []string, stdin io.Reader, stdout, stderr io.Writer, getenv fun
 	defer stop()
 
 	if opts.ui == "gui" {
+		// finish runs on the window goroutine; gui.Run calls it once, the guard makes sure
+		// the position is persisted and exitProcess is called at most once anyway.
+		var once sync.Once
 		finish := func(last int, err error) {
-			_ = last // GUI resume is wired by a later task
-			if err != nil {
-				errLine(stderr, err)
-				exitProcess(1)
-				return
-			}
-			exitProcess(0)
+			once.Do(func() {
+				ferr := r.finish(p, last)
+				switch {
+				case err != nil:
+					errLine(stderr, err)
+					exitProcess(1)
+				case ferr != nil:
+					errLine(stderr, ferr)
+					exitProcess(1)
+				default:
+					exitProcess(0)
+				}
+			})
 		}
-		if err := gui.Run(ctx, p, gui.Options{Getenv: getenv}, finish); err != nil {
+		if err := runGUI(ctx, p, gui.Options{Getenv: getenv}, finish); err != nil {
 			return exitCode(err), err
 		}
-		return 0, nil
+		return 0, nil // only a test fake returns; finish already saved
 	}
 
 	t, err := openTerminal()
