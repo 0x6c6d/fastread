@@ -156,6 +156,12 @@ func Run(ctx context.Context, t Terminal, p *state.Player, opts Options) (last i
 		return false
 	}
 
+	// A terminal that reports size changes adds one more wake-up; nil otherwise.
+	var resizeC <-chan struct{}
+	if rz, ok := t.(Resizer); ok {
+		resizeC = rz.Resized()
+	}
+
 	p.Start()
 	if err := redraw(); err != nil {
 		return p.Index(), err
@@ -180,6 +186,9 @@ func Run(ctx context.Context, t Terminal, p *state.Player, opts Options) (last i
 			if p.Tick() {
 				return p.Index(), nil
 			}
+		case <-resizeC:
+			// redraw below re-queries the size and re-splits; SetParts keeps the
+			// current step's elapsed time.
 		}
 		if err := redraw(); err != nil {
 			return p.Index(), err

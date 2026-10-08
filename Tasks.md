@@ -98,7 +98,7 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-
 | T046 | 5 | Player split-step timing (SetParts) | T031 | sonnet | done | player.go SetParts/Part/Parts; steps_test.go |
 | T047 | 5 | Key decoder with escape sequences (TestKeyDecode) | T007 | sonnet | done | internal/tui keys.go KeyDecoder + keys_test.go (TestKeyDecode, FuzzKeyDecode) |
 | T048 | 5 | TUI loop on Player deadlines (keys, split steps, drift) | T041, T042, T046, T047 | opus | done | loop.go (Run + loop, seams), run.go only Options, loop_test.go; 50 wpm start asserts 75/50 (brief gap) |
-| T049 | 5 | SIGWINCH re-layout and the real /dev/tty (TestLoopResize) | T048 | opus | todo | |
+| T049 | 5 | SIGWINCH re-layout and the real /dev/tty (TestLoopResize) | T048 | opus | done | terminal.go Resizer, newTTY, idempotent Close; loop.go resize case; resize_test.go, terminal_test.go (pty); go.mod x/sys still marked indirect |
 | T050 | 5 | Restore on every exit path and the leak test | T049 | opus | todo | |
 | T051 | 5 | E2E stdin, not-found and no-argument TTY (tmux) | T011, T024, T034 | sonnet | todo | |
 | T052 | 5 | E2E terminal restore (TestE2ERestore) | T011, T050 | sonnet | todo | adds e2e helpers paneState, appPID |
