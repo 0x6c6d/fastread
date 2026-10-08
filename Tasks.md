@@ -106,7 +106,7 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-
 | T054 | 5 | E2E live resize (TestE2EResize) | T049, T053 | sonnet | done | e2e/resize_test.go (TestE2EResize, 7 steps, -count=2 stable) |
 | T055 | 5 | E2E resume and SIGTERM state save | T034, T052 | sonnet | done | e2e/resume_test.go (TestE2ESIGTERMSavesState, TestE2EResume) |
 | T056 | 5 | Phase 5 gate (live keys e2e, exit criterion) | T050, T051, T052, T053, T054, T055 | sonnet | done | e2e/keys_test.go (TestE2EKeys); Phase 5 exit criterion passes |
-| T057 | 6 | GUI pure layout: focus x, baseline, ticks | T008, T028 | sonnet | todo | |
+| T057 | 6 | GUI pure layout: focus x, baseline, ticks | T008, T028 | sonnet | done | gui/layout.go (pure Layout, PxOf, Measurer), measure_test.go, layout_test.go |
 | T058 | 6 | GUI shrink and split (R23), all-sizes focus invariant | T057 | sonnet | todo | |
 | T059 | 6 | GUI help and progress geometry (pure) | T057, T042 | sonnet | todo | |
 | T060 | 6 | Gio key map (TestGUIKeyMap) | T008, T030 | sonnet | todo | |
