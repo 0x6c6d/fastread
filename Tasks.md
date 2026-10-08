@@ -69,7 +69,7 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-
 | T017 | 2 | XHTML to paragraphs (x/net/html pin) | T013 | opus | done | xhtml.go + tests, race const files; x/net v0.50.0 direct; td/th as word separators (brief gap, see Improvements) |
 | T018 | 2 | EPUB loader (container, OPF spine, zip-entry resolution) | T015, T017 | opus | done | epub.go loader, epub_fixture_test.go, epub_test.go, testdata/sample.epub |
 | T019 | 2 | EPUB DRM detection (encryption.xml) | T018 | opus | done | epub_drm.go + epub_drm_test.go; checkEncryption wired into loadEPUB |
-| T020 | 2 | FB2 loader (body text only) | T015 | sonnet | todo | |
+| T020 | 2 | FB2 loader (body text only) | T015 | sonnet | done | fb2.go, fb2_test.go, testdata/sample.fb2 |
 | T021 | 2 | PDF text-layer loader (ledongthuc/pdf pin) | T015 | opus | todo | |
 | T022 | 2 | PDF hostile-input suite | T021 | opus | todo | |
 | T023 | 2 | Flag validation table and help/version tests | T010 | opus | todo | |

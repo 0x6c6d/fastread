@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description><title-info><book-title>Hidden Title</book-title>
+<annotation><p>Hidden annotation</p></annotation></title-info></description>
+<body><title><p>Body Title</p></title>
+<section><p>First body paragraph.</p><p>Second <emphasis>body</emphasis> paragraph.</p></section></body>
+<body name="notes"><section><p>Note text.</p></section></body>
+<binary id="c.jpg" content-type="image/jpeg">SGlkZGVu</binary>
+</FictionBook>
