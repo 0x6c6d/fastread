@@ -391,7 +391,7 @@ func TestRunSignalSaves(t *testing.T) {
 	done := make(chan result, 1)
 	go func() {
 		var out, errb bytes.Buffer
-		code := run([]string{"--wpm", "50", book}, strings.NewReader(""), &out, &errb, tmpEnv(tmp))
+		code := run([]string{"--wpm", "50", "--size", "1", book}, strings.NewReader(""), &out, &errb, tmpEnv(tmp))
 		done <- result{code, errb.String()}
 	}()
 	select {

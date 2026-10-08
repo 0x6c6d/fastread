@@ -67,7 +67,7 @@ func TestEncodeColors(t *testing.T) {
 	}
 	colour := regexp.MustCompile(`\x1b\[(3[0-9]|9[0-7])(;[0-9]+)*m`)
 	bg := regexp.MustCompile(`\x1b\[4[0-9]|48;`)
-	f := Render(Model{Word: "Hello"}, 20, 3)
+	f := Render(Model{Word: "Hello"}, 20, 5)
 	for mode, s := range focus {
 		out := Encode(f, mode)
 		if !bytes.Contains(out, []byte(s+"e")) {

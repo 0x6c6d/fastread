@@ -3,6 +3,7 @@ package tui
 
 import (
 	"github.com/0x6c6d/fastread/internal/orp"
+	"github.com/0x6c6d/fastread/internal/tui/glyph"
 	"github.com/rivo/uniseg"
 )
 
@@ -26,13 +27,14 @@ type Cell struct {
 // Frame is a W x H grid; Cells[y][x], len(Cells) == H, len(Cells[y]) == W.
 type Frame struct {
 	W, H  int
+	Size  int // size level actually drawn; 0 when nothing is drawn
 	Cells [][]Cell
 }
 
 // Model is everything Render needs for one frame.
 type Model struct {
 	Word         string
-	Size         int // 1..5 (rendered as 1 in this task)
+	Size         int // 1..5
 	Paused       bool
 	ShowProgress bool
 	ShowHelp     bool
@@ -57,6 +59,15 @@ func Render(m Model, w, h int) Frame {
 		f.Cells[y] = make([]Cell, w)
 	}
 	if w == 0 || h == 0 {
+		return f
+	}
+	s := EffectiveSize(m.Word, m.Size, w, h)
+	f.Size = s
+	if s == 0 {
+		return f
+	}
+	if s >= 2 {
+		renderBlocks(&f, m.Word, s)
 		return f
 	}
 	row := f.Cells[h/2]
@@ -99,4 +110,44 @@ func Render(m Model, w, h int) Frame {
 		x += cw
 	}
 	return f
+}
+
+// renderBlocks draws word as block glyphs of size s (>= 2); all clusters have glyphs.
+func renderBlocks(f *Frame, word string, s int) {
+	cs := orp.Clusters(word)
+	if len(cs) == 0 {
+		return
+	}
+	fi := orp.Index(word)
+	R, W := glyph.Rows(s), glyph.Width(s)
+	y0 := f.H/2 - (R-1)/2
+	for k, c := range cs {
+		rows, ok := glyph.Block([]rune(c)[0], s)
+		if !ok {
+			continue
+		}
+		xk := f.W/2 - W/2 + (k-fi)*W
+		for j := 0; j < R; j++ {
+			y := y0 + j
+			if y < 0 || y >= f.H {
+				continue
+			}
+			rr := []rune(rows[j])
+			for i := 0; i < W; i++ {
+				x := xk + i
+				if x < 0 || x >= f.W {
+					continue
+				}
+				st := StylePlain
+				if k == fi {
+					st = StyleFocus
+				}
+				cell := Cell{Style: st}
+				if i < len(rr) && rr[i] != ' ' {
+					cell.Text = string(rr[i])
+				}
+				f.Cells[y][x] = cell
+			}
+		}
+	}
 }
