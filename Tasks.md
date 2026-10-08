@@ -59,7 +59,7 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-
 | T007 | 1 | TUI runtime skeleton (terminal, alt screen, loop) | T004, T006 | opus | done | internal/tui: terminal.go, run.go, run_test.go; x/term, x/sys pinned |
 | T008 | 1 | GUI skeleton (Gio window, nogui stub) | T004 | opus | done | internal/gui: gui.go, stub.go, window.go + tests; gioui v0.10.3, x/image pinned; doc wording deviates (see Improvements) |
 | T009 | 1 | CLI flags, usage, help and version | T001 | opus | done | cmd/fastread: main.go, flags.go, run.go + tests; run doc comment reworded (see Improvements) |
-| T010 | 1 | CLI wiring (input to TUI/GUI) | T002, T005, T007, T008, T009 | opus | todo | |
+| T010 | 1 | CLI wiring (input to TUI/GUI) | T002, T005, T007, T008, T009 | opus | done | cmd/fastread/run.go wiring + run_test.go (seams, signals, exit codes) |
 | T011 | 1 | E2E harness and TestE2EBasic (tmux) | T010 | sonnet | todo | also Phase 1 exit criterion |
 | T012 | 1 | MIT LICENSE file | T000 | opus | todo | |
 | T013 | 2 | Hardened input helpers (size caps, zip, XML, recover) | T005 | opus | todo | |
