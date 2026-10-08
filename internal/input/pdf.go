@@ -35,7 +35,15 @@ func loadPDF(b []byte, lim Limits) ([]string, error) {
 			}
 			return fmt.Errorf("%w: %v", ErrCorruptPDF, err)
 		}
-		pages, err := pdfPages(r.Trailer().Key("Root").Key("Pages"))
+		root := r.Trailer().Key("Root")
+		if root.Kind() != pdf.Dict {
+			return fmt.Errorf("%w: document catalog is not a dictionary", ErrCorruptPDF)
+		}
+		tree := root.Key("Pages")
+		if tree.Kind() != pdf.Dict || tree.Key("Type").Name() != "Pages" {
+			return fmt.Errorf("%w: missing or invalid root /Pages node", ErrCorruptPDF)
+		}
+		pages, err := pdfPages(tree)
 		if err != nil {
 			return err
 		}
@@ -54,6 +62,9 @@ func loadPDF(b []byte, lim Limits) ([]string, error) {
 		return nil
 	})
 	if err != nil {
+		if strings.ContainsAny(err.Error(), "\r\n") {
+			err = oneLineError{err}
+		}
 		return nil, err
 	}
 	for _, p := range paras {
@@ -99,3 +110,13 @@ func pdfPages(root pdf.Value) ([]pdf.Page, error) {
 	}
 	return pages, nil
 }
+
+// oneLineError keeps error messages that embed library text on one line; errors.Is still
+// sees the wrapped sentinels.
+type oneLineError struct{ err error }
+
+func (e oneLineError) Error() string {
+	return strings.NewReplacer("\r\n", " ", "\n", " ", "\r", " ").Replace(e.err.Error())
+}
+
+func (e oneLineError) Unwrap() error { return e.err }

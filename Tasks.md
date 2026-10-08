@@ -71,7 +71,7 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-
 | T019 | 2 | EPUB DRM detection (encryption.xml) | T018 | opus | done | epub_drm.go + epub_drm_test.go; checkEncryption wired into loadEPUB |
 | T020 | 2 | FB2 loader (body text only) | T015 | sonnet | done | fb2.go, fb2_test.go, testdata/sample.fb2 |
 | T021 | 2 | PDF text-layer loader (ledongthuc/pdf pin) | T015 | opus | done | pdf.go loader, pdf_fixture_test.go, pdf_test.go, sample.pdf + notext.pdf; ledongthuc/pdf pinned |
-| T022 | 2 | PDF hostile-input suite | T021 | opus | todo | |
+| T022 | 2 | PDF hostile-input suite | T021 | opus | done | pdf_corrupt_test.go (20 rows); pdf.go root-Pages validation + one-line errors |
 | T023 | 2 | Flag validation table and help/version tests | T010 | opus | todo | |
 | T024 | 2 | Typed-error chain and exit-code mapping | T014, T015, T018, T021 | opus | todo | |
 | T025 | 2 | Performance test 5 MB load and tokenize | T015 | sonnet | todo | |
