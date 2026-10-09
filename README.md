@@ -2,6 +2,8 @@
 
 > **Want to build and use fastread?** See the [installation and usage guide](docs/guide.md). (That guide is not relevant for Claude loop-coding; ignore it when running the supervisor/worker loop.)
 
+![fastread showing one word with a red focus letter](docs/images/screenshot.png)
+
 ## 1. Overview
 
 `fastread` is a Linux command-line tool written in Go for RSVP (rapid serial visual presentation) speed reading. It shows exactly one word at a time at a fixed screen position, with one red focus letter (the optimal recognition point, ORP) and all other letters white, so the reader's eyes never move. It reads raw text, stdin, and `.txt`, `.md`, `.epub`, `.fb2` and text-layer `.pdf` files, and renders either in a terminal (TUI, default) or in a Gio window (GUI). Playback speed (50–1500 wpm) and glyph size (levels 1–5) change by flag and live by key, and reading position is resumed per file. The target is a single Linux binary, MIT licensed, module `github.com/0x6c6d/fastread`.
