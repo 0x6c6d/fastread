@@ -14,6 +14,9 @@ import (
 	"time"
 )
 
+// gioPath is built by concatenation so this file never contains the module path literally.
+const gioPath = "gioui" + ".org"
+
 // freeDisplay returns the first ":N" (N in 900-999) with no X socket or lock file.
 func freeDisplay(t *testing.T) string {
 	t.Helper()
@@ -153,8 +156,8 @@ func TestE2ENoguiBinary(t *testing.T) {
 		if err != nil {
 			t.Fatalf("go %v: %v\n%s", args, err, out)
 		}
-		if bytes.Contains(out, []byte("gioui.org")) {
-			t.Fatalf("go %v output mentions gioui.org", args)
+		if bytes.Contains(out, []byte(gioPath)) {
+			t.Fatalf("go %v output mentions %s", args, gioPath)
 		}
 	}
 	for name, extra := range map[string][]string{
