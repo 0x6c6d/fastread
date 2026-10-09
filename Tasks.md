@@ -115,7 +115,7 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-
 | T063 | 6 | E2E Xvfb harness and TestE2EGUIXvfb | T011, T062 | sonnet | done | e2e/xvfb_test.go, gui_test.go: adds helpers newXvfb, startGUI, readIndex; 1 round |
 | T064 | 6 | E2E GUI error paths and the nogui binary | T011, T062 | sonnet | done | e2e/guierr_test.go; 1 round |
 | T065 | 6 | Phase 6 gate (live GUI keys e2e, exit criterion) | T063, T064 | sonnet | done | e2e/guikeys_test.go; also fixed gioui.org literal in guierr_test.go (D10); Phase 6 exit criterion passes; 1 round |
-| T066 | 7 | Third-party font licence texts (gofont, misc-fixed) | T008, T037 | opus | todo | opus per Consequential row 39 although Plan's routing example says haiku; content fixed byte for byte by the script |
+| T066 | 7 | Third-party font licence texts (gofont, misc-fixed) | T008, T037 | opus | done | third_party/gofont/LICENSE, misc-fixed/LICENSE; 1 round; opus per Consequential row 39 although Plan's routing example says haiku; content fixed byte for byte by the script |
 | T067 | 7 | E2E every input type and error case (TestE2EInputTypes) | T026, T051 | sonnet | todo | its CASE lines are the D16 report material |
 | T068 | 7 | Usage documentation (docs/usage.md) | T036, T056, T065, T066 | opus | todo | opus: Risk CLI contract and row 39; script cross-checks --help, HelpText, LevelSp, MinSp, go.mod |
 | T069 | 7 | Global Definition of Done gate (D1-D17) | T012, T045, T067, T068 | supervisor | todo | also Phase 7 exit criterion; D5 uses scripts/verify/_dodcheck.go |
