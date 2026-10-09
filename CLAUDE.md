@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-`fastread`: Linux CLI in Go for RSVP speed reading (one word at a time, red fixed focus letter, TUI and Gio GUI). No code exists yet; the spec is `README.md`, and the loop turns it into `Plan.md` and `Tasks.md`. Once code exists, keep the commands and layout below in sync with it.
+`fastread`: Linux CLI in Go for RSVP speed reading (one word at a time, red fixed focus letter, TUI and Gio GUI). The code is implemented (`cmd/`, `internal/`, `e2e/`); the spec is `README.md`, which the loop turned into `Plan.md` and `Tasks.md`. Keep the commands and layout below in sync with the code.
 
 ## Commands
 
@@ -14,6 +14,8 @@ go build -tags nogui ./...          # TUI-only build, must also work with CGO_EN
 gofmt -l .                          # must print nothing
 go vet ./...
 go test ./...                       # also run with -race and with -tags nogui
+go test -tags e2e -count=1 -timeout 600s ./e2e/...   # end-to-end, needs tmux, Xvfb, xdotool
+scripts/check-protected.sh          # protected spec/prompts/skill/delegation section untouched
 ```
 
 Combined check (exit 0 = healthy): `test -z "$(gofmt -l .)" && go vet ./... && go test ./... && go test -tags nogui ./... && go build ./... && go build -tags nogui ./...`
@@ -25,7 +27,8 @@ Combined check (exit 0 = healthy): `test -z "$(gofmt -l .)" && go vet ./... && g
 - `internal/tui`: terminal rendering and key handling, golden-tested frames.
 - `internal/gui`: the only package importing Gio (`gioui.org`); layout math is a pure function tested without a display. Excluded by the `nogui` build tag.
 - Resume state lives in `$XDG_STATE_HOME/fastread/` (fallback `~/.local/state/fastread/`).
-- Usage docs go under `docs/`; `README.md` is the protected spec.
+- `cmd/fastread` also holds `run.go` (main loop) and `resume.go` (resume wiring); `e2e/` has the tmux/Xvfb end-to-end tests (build tag `e2e`); `scripts/verify/<ID>.sh` are per-task verifications.
+- Docs go under `docs/`: `docs/usage.md` is the reference, `docs/guide.md` is the install and how-to guide (linked from the top of `README.md`; not relevant for loop-coding). `README.md` is the protected spec.
 
 ## Delegation workflow: supervise, don't implement
 
