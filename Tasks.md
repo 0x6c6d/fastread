@@ -113,7 +113,7 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-
 | T061 | 6 | Gio window: layout drawing, Player deadlines, keys, resize | T035, T046, T058, T059, T060 | opus | done | window.go, measure_gio.go, measure_gio_test.go: Gio drawing on Player deadlines; 1 round; verify uses _gui.sh |
 | T062 | 6 | GUI exit path and display errors (finish once, R24) | T061 | opus | done | session.go, session_test.go, window.go; row fixed: unescaped newSession regex in verify; 1 round |
 | T063 | 6 | E2E Xvfb harness and TestE2EGUIXvfb | T011, T062 | sonnet | done | e2e/xvfb_test.go, gui_test.go: adds helpers newXvfb, startGUI, readIndex; 1 round |
-| T064 | 6 | E2E GUI error paths and the nogui binary | T011, T062 | sonnet | todo | |
+| T064 | 6 | E2E GUI error paths and the nogui binary | T011, T062 | sonnet | done | e2e/guierr_test.go; 1 round |
 | T065 | 6 | Phase 6 gate (live GUI keys e2e, exit criterion) | T063, T064 | sonnet | todo | also Phase 6 exit criterion |
 | T066 | 7 | Third-party font licence texts (gofont, misc-fixed) | T008, T037 | opus | todo | opus per Consequential row 39 although Plan's routing example says haiku; content fixed byte for byte by the script |
 | T067 | 7 | E2E every input type and error case (TestE2EInputTypes) | T026, T051 | sonnet | todo | its CASE lines are the D16 report material |
