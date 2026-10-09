@@ -111,7 +111,7 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-
 | T059 | 6 | GUI help and progress geometry (pure) | T057, T042 | sonnet | done | gui/chrome.go (LayoutChrome, ProgressText, HelpText), chrome_test.go |
 | T060 | 6 | Gio key map (TestGUIKeyMap) | T008, T030 | sonnet | done | internal/gui/keys.go, keys_test.go: one key table drives keyFilters and keyAction; 1 round |
 | T061 | 6 | Gio window: layout drawing, Player deadlines, keys, resize | T035, T046, T058, T059, T060 | opus | done | window.go, measure_gio.go, measure_gio_test.go: Gio drawing on Player deadlines; 1 round; verify uses _gui.sh |
-| T062 | 6 | GUI exit path and display errors (finish once, R24) | T061 | opus | todo | |
+| T062 | 6 | GUI exit path and display errors (finish once, R24) | T061 | opus | done | session.go, session_test.go, window.go; row fixed: unescaped newSession regex in verify; 1 round |
 | T063 | 6 | E2E Xvfb harness and TestE2EGUIXvfb | T011, T062 | sonnet | todo | adds e2e helpers newXvfb, startGUI, readIndex |
 | T064 | 6 | E2E GUI error paths and the nogui binary | T011, T062 | sonnet | todo | |
 | T065 | 6 | Phase 6 gate (live GUI keys e2e, exit criterion) | T063, T064 | sonnet | todo | also Phase 6 exit criterion |

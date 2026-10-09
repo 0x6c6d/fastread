@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	"sync"
 	"time"
 
 	"gioui.org/app"
@@ -54,17 +53,10 @@ func Run(ctx context.Context, p *state.Player, opts Options, finish func(last in
 	if !hasDisplay(opts.getenv()) {
 		return ErrNoDisplay
 	}
-	var once sync.Once
-	done := func(err error) {
-		once.Do(func() { finish(p.Index(), err) })
-	}
+	s := newSession(p, finish)
 	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				done(fmt.Errorf("gui: internal error: %v", r))
-			}
-		}()
-		done(loop(ctx, p))
+		defer s.guard()
+		loop(ctx, p, s)
 	}()
 	app.Main()
 	return nil
@@ -78,32 +70,35 @@ func newShaper() (*text.Shaper, error) {
 	return text.NewShaper(text.NoSystemFonts(), text.WithCollection(faces)), nil
 }
 
-// loop runs the window event loop until quit, close, end of text or ctx done. It is the
-// only code that touches the Player while the window is open.
-func loop(ctx context.Context, p *state.Player) error {
+// loop runs the window event loop until quit, close, end of text or ctx done; every end
+// goes through s, and loop returns right after it. It is the only code that touches the
+// Player while the window is open.
+func loop(ctx context.Context, p *state.Player, s *session) {
 	m, err := newGioMeasurer()
 	if err != nil {
-		return err
+		s.end(err)
+		return
 	}
 	w := new(app.Window)
 	w.Option(app.Title("fastread"), app.Size(unit.Dp(600), unit.Dp(300)))
 
-	stop := make(chan struct{})
-	defer close(stop)
+	// ctx helper: wake the window on ctx done so the loop below ends the session; it
+	// also ends when the session does.
 	go func() {
 		select {
 		case <-ctx.Done():
 			w.Invalidate()
-		case <-stop:
+		case <-s.doneCh():
 		}
 	}()
 
 	var ops op.Ops
 	started := false
-	for {
+	for !s.ended() {
 		switch e := w.Event().(type) {
 		case app.DestroyEvent:
-			return e.Err
+			s.end(windowErr(e.Err))
+			return
 		case app.FrameEvent:
 			gtx := app.NewContext(&ops, e)
 			// a. keys
@@ -117,11 +112,13 @@ func loop(ctx context.Context, p *state.Player) error {
 					continue
 				}
 				if a, ok := keyAction(ke); ok && p.Apply(a) {
-					return nil
+					s.end(nil)
+					return
 				}
 			}
 			if ctx.Err() != nil {
-				return nil
+				s.end(nil)
+				return
 			}
 			// b. clock
 			if !started {
@@ -130,7 +127,8 @@ func loop(ctx context.Context, p *state.Player) error {
 			}
 			for p.Playing() && !time.Now().Before(p.Deadline()) {
 				if p.Tick() {
-					return nil
+					s.end(nil)
+					return
 				}
 			}
 			// c. layout, d. draw

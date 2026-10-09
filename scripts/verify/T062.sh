@@ -18,7 +18,7 @@ go test -tags nogui -count=1 ./cmd/fastread
 CMD
 expect_ok "session API declared in an untagged, Gio-free session.go; window.go uses it" <<'CMD'
 test -f internal/gui/session.go && ! head -1 internal/gui/session.go | grep -q '^//go:build' || exit 1
-for s in 'func newSession(p \*state.Player, finish func(last int, err error)) \*session' 'func \(s \*session\) end\(err error\)' \
+for s in 'func newSession\(p \*state.Player, finish func\(last int, err error\)\) \*session' 'func \(s \*session\) end\(err error\)' \
   'func \(s \*session\) ended\(\) bool' 'func \(s \*session\) guard\(\)' 'func windowErr\(err error\) error'; do
   grep -qE "$s" internal/gui/session.go || { echo "missing: $s"; exit 1; }
 done
