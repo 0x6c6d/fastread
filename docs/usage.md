@@ -148,9 +148,6 @@ Resume. For file sources only, fastread remembers where you stopped:
   at word 0; else the saved index is used if the file's SHA-256 still matches and the index is
   inside the text; else word 0. An unreadable or corrupt entry prints one
   `fastread: warning: ignoring saved position: ...` line and counts as nothing saved.
-- As built, `--no-resume` and `--start` only affect where reading starts: the position at
-  quit is still saved (and the entry deleted at the end of the text), even though `--help`
-  says `--no-resume` does not save.
 
 Environment variables read:
 

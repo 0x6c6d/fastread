@@ -118,7 +118,7 @@ Batches: 1 = phases 0-1 (T000-T012); 2 = phase 2 (T013-T026); 3 = phase 3 (T027-
 | T066 | 7 | Third-party font licence texts (gofont, misc-fixed) | T008, T037 | opus | done | third_party/gofont/LICENSE, misc-fixed/LICENSE; 1 round; opus per Consequential row 39 although Plan's routing example says haiku; content fixed byte for byte by the script |
 | T067 | 7 | E2E every input type and error case (TestE2EInputTypes) | T026, T051 | sonnet | done | e2e/inputtypes_test.go; 1 round; its CASE lines are the D16 report material |
 | T068 | 7 | Usage documentation (docs/usage.md) | T036, T056, T065, T066 | opus | done | docs/usage.md; 1 round; opus: Risk CLI contract and row 39; script cross-checks --help, HelpText, LevelSp, MinSp, go.mod |
-| T070 | 7 | --no-resume help text matches built behaviour (R29) | T068 | haiku | todo | defect found by T068 worker; help said no save, code and spec save |
+| T070 | 7 | --no-resume help text matches built behaviour (R29) | T068 | haiku | done | cmd/fastread/flags.go, docs/usage.md; 1 round; defect found by T068 worker; help said no save, code and spec save |
 | T069 | 7 | Global Definition of Done gate (D1-D17) | T012, T045, T067, T068, T070 | supervisor | todo | also Phase 7 exit criterion; D5 uses scripts/verify/_dodcheck.go |
 
 Status values: `todo` · `done` · `blocked` · `superseded`. No pipe characters inside cells.

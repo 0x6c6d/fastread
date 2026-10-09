@@ -90,7 +90,7 @@ Flags (before the text; -- ends flags):
   --size N         glyph size level, %d-%d (default %d)
   --ui tui|gui     user interface (default %s)
   --start N        start at 0-based word index N, >= 0 (overrides resume)
-  --no-resume      do not use or save the resume position
+  --no-resume      ignore the saved resume position at start
   --no-progress    hide the progress indicator
   -h, --help       show this help and exit
   --version        print the version and exit
