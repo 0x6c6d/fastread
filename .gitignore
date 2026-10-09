@@ -1,0 +1,29 @@
+# Built binary (root only, so cmd/fastread/ stays tracked)
+/fastread
+/dist/
+/bin/
+
+# Go test and coverage artifacts
+*.test
+*.out
+*.prof
+coverage.*
+
+# Go workspace files
+go.work
+go.work.sum
+
+# Editors and OS
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Local Claude Code settings (the shared .claude/skills/ stays tracked)
+.claude/settings.local.json
+
+# Local env files
+.env
+.env.*
