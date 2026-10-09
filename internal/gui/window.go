@@ -8,22 +8,30 @@ import (
 	"image"
 	"image/color"
 	"sync"
+	"time"
 
 	"gioui.org/app"
-	"gioui.org/font"
+	"gioui.org/f32"
 	"gioui.org/font/opentype"
-	"gioui.org/io/event"
 	"gioui.org/io/key"
-	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/text"
 	"gioui.org/unit"
-	"gioui.org/widget"
 	"golang.org/x/image/font/gofont/goregular"
+	"golang.org/x/image/math/fixed"
 
 	"github.com/0x6c6d/fastread/internal/state"
+)
+
+// Colours of everything the window draws; red is used for the focus cluster only.
+var (
+	colBlack = color.NRGBA{A: 0xff}
+	colWhite = color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
+	colRed   = color.NRGBA{R: 0xff, A: 0xff}
+	colBar   = color.NRGBA{R: 0x40, G: 0x40, B: 0x40, A: 0xff}
+	colGrey  = color.NRGBA{R: 0xc0, G: 0xc0, B: 0xc0, A: 0xff}
 )
 
 // sizeSp maps size levels 1..5 to text sizes.
@@ -70,9 +78,10 @@ func newShaper() (*text.Shaper, error) {
 	return text.NewShaper(text.NoSystemFonts(), text.WithCollection(faces)), nil
 }
 
-// loop runs the window event loop until quit, close, end of text or ctx done.
+// loop runs the window event loop until quit, close, end of text or ctx done. It is the
+// only code that touches the Player while the window is open.
 func loop(ctx context.Context, p *state.Player) error {
-	shaper, err := newShaper()
+	m, err := newGioMeasurer()
 	if err != nil {
 		return err
 	}
@@ -90,7 +99,6 @@ func loop(ctx context.Context, p *state.Player) error {
 	}()
 
 	var ops op.Ops
-	tag := new(int)
 	started := false
 	for {
 		switch e := w.Event().(type) {
@@ -98,64 +106,97 @@ func loop(ctx context.Context, p *state.Player) error {
 			return e.Err
 		case app.FrameEvent:
 			gtx := app.NewContext(&ops, e)
-			if quitKey(gtx, tag) {
-				p.Apply(state.ActQuit)
-				return nil
+			// a. keys
+			for {
+				ev, ok := gtx.Event(keyFilters()...)
+				if !ok {
+					break
+				}
+				ke, ok := ev.(key.Event)
+				if !ok {
+					continue
+				}
+				if a, ok := keyAction(ke); ok && p.Apply(a) {
+					return nil
+				}
 			}
 			if ctx.Err() != nil {
 				return nil
 			}
+			// b. clock
 			if !started {
 				p.Start()
 				started = true
 			}
-			if p.Tick() {
-				return nil
+			for p.Playing() && !time.Now().Before(p.Deadline()) {
+				if p.Tick() {
+					return nil
+				}
 			}
-			draw(gtx, shaper, p, tag)
-			gtx.Execute(op.InvalidateCmd{At: p.Deadline()})
+			// c. layout, d. draw
+			draw(gtx.Ops, m, p, e)
+			// e. next frame at the absolute deadline
+			if p.Playing() {
+				gtx.Execute(op.InvalidateCmd{At: p.Deadline()})
+			}
 			e.Frame(gtx.Ops)
 		}
 	}
 }
 
-// quitKey drains key events for tag and reports whether q, Esc or Ctrl+C was pressed.
-func quitKey(gtx layout.Context, tag event.Tag) bool {
-	quit := false
-	for {
-		ev, ok := gtx.Event(
-			key.Filter{Name: "Q"},
-			key.Filter{Name: key.NameEscape},
-			key.Filter{Name: "C", Required: key.ModCtrl},
-		)
-		if !ok {
-			return quit
+// draw lays out the current word for this frame's size and paints the whole window.
+func draw(ops *op.Ops, m *gioMeasurer, p *state.Player, e app.FrameEvent) {
+	in := LayoutInput{
+		Word: p.Token().Text, Level: p.Size(), W: e.Size.X, H: e.Size.Y,
+		PxPerSp: e.Metric.PxPerSp, Part: p.Part(), M: m,
+	}
+	res := Layout(in)
+	p.SetParts(res.Parts)
+	if p.Part() != res.Part {
+		in.Part = p.Part()
+		res = Layout(in)
+	}
+
+	size := image.Pt(max(e.Size.X, 1), max(e.Size.Y, 1))
+	paint.FillShape(ops, colBlack, clip.Rect{Max: size}.Op())
+
+	x := res.OriginX
+	for i, c := range res.Clusters {
+		col := colWhite
+		if i == res.Focus {
+			col = colRed
 		}
-		if ke, ok := ev.(key.Event); ok && ke.State == key.Press {
-			switch {
-			case ke.Name == "Q", ke.Name == key.NameEscape,
-				ke.Name == "C" && ke.Modifiers.Contain(key.ModCtrl):
-				quit = true
-			}
+		drawText(ops, m, c, res.Px, x, res.BaselineY, col)
+		if i < len(res.Advances) {
+			x += res.Advances[i]
 		}
+	}
+	paint.FillShape(ops, colWhite, clip.Rect(res.TickTop).Op())
+	paint.FillShape(ops, colWhite, clip.Rect(res.TickBottom).Op())
+
+	if !p.ShowHelp() && !p.ShowProgress() {
+		return
+	}
+	ch := LayoutChrome(e.Size.X, e.Size.Y, e.Metric.PxPerSp, p.Index(), p.Len(), m)
+	if p.ShowHelp() {
+		drawText(ops, m, HelpText, ch.Px, fixed.I(ch.Help.X), fixed.I(ch.Help.Y), colWhite)
+	}
+	if p.ShowProgress() {
+		paint.FillShape(ops, colBar, clip.Rect(ch.Bar).Op())
+		paint.FillShape(ops, colWhite, clip.Rect(ch.BarFill).Op())
+		wpm, ok := p.EffectiveWPM()
+		txt := ProgressText(p.Index(), p.Len(), wpm, ok)
+		drawText(ops, m, txt, ch.Px, fixed.I(ch.Progress.X), fixed.I(ch.Progress.Y), colGrey)
 	}
 }
 
-// draw fills the window black and draws the current word centred in white.
-func draw(gtx layout.Context, shaper *text.Shaper, p *state.Player, tag event.Tag) {
-	paint.FillShape(gtx.Ops, color.NRGBA{A: 0xff}, clip.Rect{Max: gtx.Constraints.Max}.Op())
-	area := clip.Rect(image.Rectangle{Max: gtx.Constraints.Max}).Push(gtx.Ops)
-	event.Op(gtx.Ops, tag)
-	area.Pop()
-
-	word := p.Token().Text
-	macro := op.Record(gtx.Ops)
-	paint.ColorOp{Color: color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}}.Add(gtx.Ops)
-	material := macro.Stop()
-
-	layout.Center.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-		gtx.Constraints.Min = image.Point{}
-		return widget.Label{Alignment: text.Middle, MaxLines: 1}.
-			Layout(gtx, shaper, font.Font{}, wordSize(p.Size()), word, material)
-	})
+// drawText fills the outline of s shaped at px with col, its pen at (x, baseline y).
+func drawText(ops *op.Ops, m *gioMeasurer, s string, px, x, y fixed.Int26_6, col color.NRGBA) {
+	v := m.shape(s, px)
+	if len(v.glyphs) == 0 {
+		return
+	}
+	t := op.Affine(f32.AffineId().Offset(f32.Pt(float32(x)/64, float32(y)/64))).Push(ops)
+	paint.FillShape(ops, col, clip.Outline{Path: m.sh.Shape(v.glyphs)}.Op())
+	t.Pop()
 }
